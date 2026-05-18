@@ -199,7 +199,7 @@ sequenceDiagram
     GH->>CA: Trigger agent
     CA->>WIQ: get-spec(specRef)
     WIQ-->>CA: spec (JSON)
-    CA->>CA: validate schema; generate .bicepparam
+    CA->>CA: validate schema + generate .bicepparam
     CA->>ADO: create-branch + commit
     CA->>ADO: open-pr (draft, with what-if summary)
     Note over CA,SA: PAUSE - awaits human "approved-to-apply" comment
