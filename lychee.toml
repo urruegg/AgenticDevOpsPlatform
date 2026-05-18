@@ -1,0 +1,24 @@
+# lychee link-check configuration.
+#
+# Consumed by:
+#   - .github/workflows/ci.yml (Markdown link check job)
+#   - scripts/preflight.ps1    (local pre-checkin validation)
+#
+# Single source of truth: edit options HERE, not in CI args. lychee
+# auto-discovers this file when invoked from the repo root.
+#
+# Reference: https://lychee.cli.rs/usage/config/
+
+# Quiet output (one line per failure only).
+no_progress = true
+
+# Validate Markdown #fragments against the linked file's headings.
+include_fragments = true
+
+# Skip 127.0.0.1 / localhost references in docs.
+exclude_loopback = true
+
+# Skip mail links — default since lychee v0.20, made explicit here so a
+# future contributor doesn't try to re-add the deprecated `--exclude-mail`
+# CLI flag.
+include_mail = false

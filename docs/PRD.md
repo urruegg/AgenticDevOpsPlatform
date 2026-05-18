@@ -551,7 +551,7 @@ implementation MUST reference the requirement IDs it advances:
    group (`feat(uc1): generate bicep params [FR-UC1-005]`).
 5. **Pull requests** — The PR template `.github/PULL_REQUEST_TEMPLATE.md`
    REQUIRES a `Requirements implemented` section listing FR/NFR IDs.
-   This is enforced per [NFR-GOV-006](#56-governance--compliance-nfr-gov-).
+   This is enforced per [NFR-GOV-006](#55-governance--compliance-nfr-gov-).
 6. **Tests & evals** — Test files and eval task YAMLs / Markdown fixtures
    SHALL include a `requirement` key (or docstring tag) referencing the
    requirement ID(s) they verify. For golden-task fixtures under

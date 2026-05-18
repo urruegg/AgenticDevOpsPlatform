@@ -430,3 +430,6 @@ FodyWeavers.xsd
 actionlint.exe
 actionlint.zip
 .actionlint/
+
+# Local preflight toolchain (scripts/preflight.ps1 downloads lychee here)
+.tools/

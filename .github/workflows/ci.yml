@@ -41,11 +41,11 @@ jobs:
       - name: Link check (lychee)
         uses: lycheeverse/lychee-action@v2
         with:
+          # Lychee options live in lychee.toml at repo root (auto-discovered)
+          # so CI and scripts/preflight.ps1 share one source of truth and
+          # CLI-flag drift between releases (e.g. v0.23 dropped
+          # `--exclude-mail`) cannot recur. Only file globs go here.
           args: >-
-            --no-progress
-            --include-fragments
-            --exclude-mail
-            --exclude-loopback
             docs/**/*.md
             sprints/*.md
             .github/*.md

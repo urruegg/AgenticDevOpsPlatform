@@ -27,7 +27,7 @@
 6. [Dependencies](#6-dependencies)
 7. [Risks & Mitigations](#7-risks--mitigations)
 8. [Exit Criteria](#8-exit-criteria)
-9. [Demo Script](#9-demo-script)
+9. [Demo Script](#9-demo-script-m3)
 10. [Related Documents](#10-related-documents)
 
 ---

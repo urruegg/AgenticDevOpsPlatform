@@ -1,6 +1,6 @@
 # NNNN. <Short, imperative title>
 
-- **Status**: Proposed | Accepted | Deprecated | Superseded by [NNNN](NNNN-...)
+- **Status**: Proposed | Accepted | Deprecated | Superseded by `NNNN-...` (link to superseding ADR)
 - **Date**: YYYY-MM-DD
 - **Deciders**: <names / roles>
 - **Tags**: `agents`, `infra`, `security`, ...

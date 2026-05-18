@@ -28,7 +28,7 @@
 6. [Dependencies](#6-dependencies)
 7. [Risks & Mitigations](#7-risks--mitigations)
 8. [Exit Criteria](#8-exit-criteria)
-9. [Demo Script](#9-demo-script)
+9. [Demo Script](#9-demo-script-m7)
 10. [Related Documents](#10-related-documents)
 
 ---
@@ -49,8 +49,8 @@ By the end of the sprint:
   Application Insights.
 - **SLOs + runbooks** published for every agent.
 - A **PRD-driven pilot demo** exercises the three shared use cases
-  ([UC1](../docs/PRD.md#41-uc1--initial-azure-subscription-build), [UC2](../docs/PRD.md#42-uc2--ongoing-drift-detection),
-  [UC3](../docs/PRD.md#43-uc3--pull-request-reviews)) end-to-end against a
+  ([UC1](../docs/PRD.md#41-uc1--subscription-build-fr-uc1-), [UC2](../docs/PRD.md#42-uc2--drift-detection-fr-uc2-),
+  [UC3](../docs/PRD.md#43-uc3--pr-review-fr-uc3-)) end-to-end against a
   representative reference workload — not a specific BU's production stack.
 
 ---

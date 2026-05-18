@@ -99,7 +99,7 @@ this ADR; no FR/NFR ID is renamed or removed.
   **supersedes** [`sprints/SPRINT_PLAN.md` §9 Q3](../../sprints/SPRINT_PLAN.md#9-open-questions--resolutions)
   ("model-independent until pilot scale justifies a choice") — there is no
   longer a model-provider abstraction to maintain at the runtime layer. The
-  guidance in [`docs/AI.md` §2.1](../AI.md#21-model-provider-abstraction-mandatory)
+  guidance in [`docs/AI.md` §2.1](../AI.md#21-model-provider-abstraction-not-applicable-at-runtime)
   is reduced to a forward-looking note for any future code.
 - Dependency on GitHub Copilot coding-agent feature evolution, rate limits,
   and MCP support. Mitigated by keeping all agent definitions as plain
@@ -116,10 +116,10 @@ this ADR; no FR/NFR ID is renamed or removed.
 - Scheduled triggers (UC2 nightly drift) require a GitHub Actions
   `schedule` workflow that opens an issue the coding agent picks up
   (Copilot itself does not run on cron). Documented in
-  [`sprints/sprint-05-uc2-drift-detection.md`](../../sprints/sprint-05-uc2-drift-detection.md).
+  [`sprints/sprint-05-uc2-drift-analyzer.md`](../../sprints/sprint-05-uc2-drift-analyzer.md).
 - Webhook-driven triggers (UC3 ADO PR events) require an ADO Service Hook
   that files a GitHub issue the coding agent picks up. Documented in
-  [`sprints/sprint-04-uc3-pr-review.md`](../../sprints/sprint-04-uc3-pr-review.md).
+  [`sprints/sprint-04-uc3-pr-review-agent.md`](../../sprints/sprint-04-uc3-pr-review-agent.md).
 
 ### Risks and Follow-ups
 - **R1 — Copilot rate limits or feature regressions stall a use case.**

@@ -9,7 +9,7 @@
 
 ## Requirements Implemented
 
-> **Required** by [NFR-GOV-006](../docs/PRD.md#56-governance--compliance-nfr-gov-).
+> **Required** by [NFR-GOV-006](../docs/PRD.md#55-governance--compliance-nfr-gov-).
 > List every PRD requirement ID this PR advances. Use `partial:` if the
 > requirement is not fully verified by this PR.
 
@@ -18,7 +18,7 @@
 
 ## Sprint Context
 
-- Sprint: `S<N>` — [sprint file](../sprints/sprint-NN-name.md)
+- Sprint: `S<N>` — sprint file: `sprints/sprint-<N>-<name>.md`
 - User stories: `S<N>-<n>`, …
 
 ## Validation Evidence
