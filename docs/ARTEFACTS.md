@@ -22,6 +22,7 @@
 | Document | Purpose | Read before changing... |
 |----------|---------|------------------------|
 | [SOLUTION_OVERVIEW.md](SOLUTION_OVERVIEW.md) | End-to-end solution overview, use cases, governance, roadmap | Any cross-cutting initiative or onboarding |
+| [PRD.md](PRD.md) | Product requirements: personas, user journeys, FR/NFR catalogue with stable IDs, traceability matrix | Any scope/feature/requirement change; ALWAYS read before writing user stories or PRs |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture, agent topology, integrations, hosting | Service boundaries, agent contracts, infra topology |
 | [AI.md](AI.md) | Responsible AI guidelines, agent governance, model selection, prompt patterns | Agent prompts, model upgrades, RAI compliance |
 | [SECURITY.md](SECURITY.md) | Zero Trust, identity, managed identity, auth, secrets, RBAC | Auth flows, Key Vault, RBAC, CORS |
@@ -46,7 +47,8 @@
 
 | If you are... | Read in this order |
 |---------------|-------------------|
-| **Onboarding to the project** | `SOLUTION_OVERVIEW.md` → `ARCHITECTURE.md` → `SECURITY.md` |
+| **Onboarding to the project** | `SOLUTION_OVERVIEW.md` → `PRD.md` → `ARCHITECTURE.md` → `SECURITY.md` |
+| **Adding or changing a feature** | `PRD.md` (find/add requirement IDs) → relevant sprint doc → `ARCHITECTURE.md` / `SECURITY.md` |
 | **Adding an agent** | `AI.md` → `ARCHITECTURE.md` → `TEST.md` |
 | **Adding an agent tool** | `SECURITY.md` → `ARCHITECTURE.md` → `TEST.md` |
 | **Changing infrastructure** | `INFRASTRUCTURE.md` → `ALM_PLAN.md` → `SECURITY.md` |

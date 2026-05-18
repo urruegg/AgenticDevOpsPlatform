@@ -56,6 +56,7 @@ security, or agent behavior.
 #### Solution-Level Docs (`docs/` — create when first needed)
 | Document | Purpose | Read before changing... |
 |----------|---------|------------------------|
+| `docs/PRD.md` | Product requirements: personas, user journeys, FR/NFR catalogue with stable IDs, traceability matrix | Any scope/feature/requirement change; ALWAYS read before writing user stories or PRs |
 | `docs/ARCHITECTURE.md` | System architecture, agent topology, integrations, hosting | Service boundaries, agent contracts, infra topology |
 | `docs/AI.md` | Responsible AI guidelines, agent governance, model selection, prompt patterns | Agent prompts, model upgrades, RAI compliance |
 | `docs/SECURITY.md` | Zero Trust, identity, managed identity, auth, secrets, RBAC | Auth flows, Key Vault, RBAC, CORS |
@@ -262,6 +263,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 PR description must include:
 - **What changed** (by file/area)
 - **Why** (issue/requirement link)
+- **Requirements implemented** — list every `FR-*` / `NFR-*` ID from `docs/PRD.md` advanced by this PR. Required by `NFR-GOV-006`. Use `partial:` if not fully verified.
 - **Test evidence** (commands run + pass/fail summary)
 - **Agent/eval impact** (eval scores before/after, golden-task delta)
 - **API impact** (new/changed endpoints, tool contracts)
@@ -282,6 +284,11 @@ are satisfied:
   explicit justification.
 - **Commit contract**: Commit messages follow Conventional Commits. Branch and
   PR are linked to the governing issue(s).
+- **Traceability contract**: PR description lists every `FR-*` / `NFR-*` ID from
+  `docs/PRD.md` it implements. If a new requirement is introduced or scope shifts,
+  `docs/PRD.md` §7 (traceability matrix) is updated in the same PR. Tests and
+  eval YAMLs reference the requirement ID(s) they verify (`requirement:` key or
+  docstring tag, e.g. `"""Verifies FR-UC1-005"""`).
 - **Impact contract**: PR includes API, infrastructure, security, and eval
   impact statements. If impact is none, PR states `none` explicitly.
 - **Review handoff contract**: PR lists residual risks/open questions and the
@@ -296,6 +303,7 @@ Before approving a PR, verify:
 - [ ] New code has unit tests (≥ 80% coverage for changed files)
 - [ ] New agent tools have integration tests and a declared input/output schema
 - [ ] Prompt or agent-behavior changes include eval results
+- [ ] PR lists the `FR-*` / `NFR-*` IDs it implements; `docs/PRD.md` §7 is consistent
 - [ ] No hard-coded secrets, subscription IDs, tenant IDs, URLs, or resource names
 - [ ] New endpoints require authentication unless explicitly justified
 - [ ] Error handling is structured and never leaks secrets to clients

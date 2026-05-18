@@ -31,6 +31,7 @@ Start with the **artefact catalogue** for the full map of documents:
 ### Cross-cutting docs
 | Topic | Document |
 |-------|----------|
+| Product requirements & traceability | [docs/PRD.md](docs/PRD.md) |
 | System architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Responsible AI & agent governance | [docs/AI.md](docs/AI.md) |
 | Security, identity, secrets | [docs/SECURITY.md](docs/SECURITY.md) |
