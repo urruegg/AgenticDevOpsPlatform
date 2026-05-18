@@ -30,6 +30,7 @@
 | [ALM_PLAN.md](ALM_PLAN.md) | CI/CD pipelines, OIDC federation, deployment strategy | Workflows, release process, rollback |
 | [TEST.md](TEST.md) | Test strategy, coverage thresholds, eval harness | Test patterns, eval gates |
 | [adr/](adr/) | Architecture Decision Records | Any cross-cutting change |
+| [../sprints/](../sprints/) | Sprint plan and per-sprint deliverables for implementing the platform | Sprint planning, scope changes, delivery tracking |
 
 ## Sub-Component Documents *(populated as components are added)*
 
@@ -52,3 +53,4 @@
 | **Changing CI/CD** | `ALM_PLAN.md` → `SECURITY.md` |
 | **Adding/changing data stores** | `DATA.md` → `SECURITY.md` |
 | **Recording a cross-cutting decision** | `adr/` (use the template) |
+| **Planning or delivering a sprint** | `../sprints/README.md` → `../sprints/SPRINT_PLAN.md` → relevant `sprint-NN-*.md` |

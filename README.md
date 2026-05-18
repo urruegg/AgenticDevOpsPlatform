@@ -26,6 +26,7 @@ Start with the **artefact catalogue** for the full map of documents:
 
 - [docs/ARTEFACTS.md](docs/ARTEFACTS.md) — single entry point
 - [docs/SOLUTION_OVERVIEW.md](docs/SOLUTION_OVERVIEW.md) — end-to-end solution overview, use cases, governance, roadmap
+- [sprints/README.md](sprints/README.md) — sprint plan to implement the platform end-to-end
 
 ### Cross-cutting docs
 | Topic | Document |
@@ -49,4 +50,5 @@ repo-wide conventions, scope guards, security rules, and PR contracts.
 Early-stage sample. Folders such as `agents/`, `tools/`, `api/`, `infra/`,
 `tests/`, and `evals/` are **planned** and will be populated as the platform
 is built. See [docs/SOLUTION_OVERVIEW.md §8](docs/SOLUTION_OVERVIEW.md#8-phased-roadmap)
-for the phased adoption roadmap.
+for the phased adoption roadmap and [sprints/SPRINT_PLAN.md](sprints/SPRINT_PLAN.md)
+for the concrete sprint sequencing.
