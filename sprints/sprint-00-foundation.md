@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.2.0 |
+| **Version** | 2.0.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (initial release); 1.1.0 narrowed scope to GitHub Copilot coding-agent setup per SPRINT_PLAN §9 Q1; 1.2.0 adds a runtime-amendment overlay aligning Sprint 0 with [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — the Python skeleton (`pyproject.toml`, `agents/__init__.py`, `tools/__init__.py`, `api/__init__.py`, `tests/__init__.py`, `evals/__init__.py`) and Python lint/format/test hooks (`ruff`, `black`, `pytest`, `pre-commit`) are **not delivered** in this sprint. They are replaced by Markdown lint + link check + golden-task fixture scaffolding. User-story IDs `S0-1..S0-4` are preserved; their acceptance criteria are reinterpreted in §3.1 below. |
+| **Previous Version** | 1.0.0 (initial release); 1.1.0 narrowed scope to GitHub Copilot coding-agent setup per SPRINT_PLAN §9 Q1; 1.2.0 added a runtime-amendment overlay aligning with [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md); 2.0.0 MAJOR — drops the 1.x Python project skeleton (`pyproject.toml`, `agents/__init__.py`, `tools/__init__.py`, `api/__init__.py`, `tests/__init__.py`, `evals/__init__.py`, `ruff`, `black`, `pytest`, `pre-commit`) and the 1.2.0 amendment-overlay structure. Replaces them with the final GitHub Copilot coding-agent foundation (Markdown + MCP allow-list + GitHub-native CI). User-story IDs `S0-1..S0-4` preserved; acceptance criteria restated in final form. |
 
 > **Window**: 2026-05-18 → 2026-05-22 (1 week bootstrap)
 > **Theme**: Bootstrap the repository and the **GitHub Copilot coding-agent**
@@ -37,20 +37,23 @@
 
 ## 1. Goal & Outcomes
 
-Stand up the repository and the **GitHub Copilot coding-agent** so the team can
-start building agents in Sprint 1 without any Azure subscription dependency.
+Stand up the repository and the **GitHub Copilot coding-agent** configuration
+so the team can start building agents in Sprint 1 without any Azure
+subscription dependency.
 
 By the end of the sprint:
 
-- Python project skeleton (`agents/`, `tools/`, `api/`, `tests/`, `evals/`) with
-  lint/format/test wired into CI (no deployment).
 - `.github/copilot-instructions.md`, `.github/PULL_REQUEST_TEMPLATE.md`, and
   `AGENTS.md` define how the GitHub Copilot coding agent works in this repo
   (scope guards, traceability contract, MCP servers it may call).
-- `.github/workflows/ci.yml` runs lint/test on every PR.
-- Repo conventions (CODEOWNERS, issue templates) committed.
-- ADR system in place; deferred decisions (hosting subscription, IaC stack,
-  OIDC, Entra Agent ID) recorded as `Proposed` ADRs.
+- `.github/copilot/mcp.json` enumerates the allowed MCP servers (initially
+  `github-mcp` only — others added in the sprint that needs them).
+- `.github/CODEOWNERS`, `.github/ISSUE_TEMPLATE/`, and at least one issue
+  template (`smoke-echo.yml`) are in place.
+- `.github/workflows/ci.yml` runs `markdownlint-cli2`, lychee link check, and
+  `actionlint` on every PR. Bicep build is added the sprint `infra/` is
+  introduced.
+- ADR system in place; deferred decisions recorded as `Proposed` ADRs.
 
 ---
 
@@ -63,53 +66,21 @@ By the end of the sprint:
 
 ## 3. Scope
 
-### 3.1 Runtime Amendment (per ADR-0002)
-
-The runtime is the **GitHub Copilot coding agent**
-([ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md)). The
-in-scope list below is reinterpreted accordingly:
-
-- **Python project skeleton, `pyproject.toml`, `ruff`, `black`, `pytest`,
-  `pre-commit`** → **dropped from Sprint 0**. There is no Python source code
-  in this repo. The repo is Markdown + YAML + Bicep (UC1 outputs).
-- **`.github/workflows/ci.yml` runs lint/test** → **runs `markdownlint-cli2`,
-  `markdown-link-check`, and `actionlint`**. Bicep validation is added only
-  when an `infra/` folder is created (no earlier than Sprint 2).
-- **`AGENTS.md`, `CODEOWNERS`, issue templates** → unchanged, still in scope.
-- **`.github/copilot/mcp.json`** → added to the deliverables list as part of
-  the Copilot coding-agent configuration.
-- **ADRs `0002-defer-hosting-subscription`, `0003-bicep-as-iac`,
-  `0004-oidc-federation`, `0005-cosmos-nosql-for-traces`** → reinterpreted:
-  `0002` is **superseded** by the new [ADR-0002 Runtime is GitHub Copilot
-  coding agent](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md);
-  `0003` (Bicep) is retained but scoped to UC1 *output* templates;
-  `0004` (OIDC) is retained but scoped to UC1's `iac-validate` and customer
-  what-if; `0005` (Cosmos for traces) is **superseded** by ADR-0002 (no
-  Cosmos at the platform layer).
-
-All user-story IDs (`S0-1`..`S0-4`) below remain stable. Acceptance criteria
-are reinterpreted in line with the amendment above (e.g., "`pytest`,
-`ruff check`, `black --check` all pass" in `S0-1` becomes "`markdownlint-cli2`
-and `markdown-link-check` pass"; "`mypy --strict` and Pydantic enforcement in
-CI" in `NFR-MAINT-001` is vacuously satisfied while no Python exists).
-
 ### In Scope
-- Python project: `pyproject.toml` (Python 3.11+), `ruff`, `black`, `pytest`, `pre-commit`.
-- Python project skeleton: `agents/__init__.py`, `tools/__init__.py`, `api/__init__.py`, `tests/__init__.py`, `evals/__init__.py`.
-- Repo conventions: `.github/PULL_REQUEST_TEMPLATE.md` (already present), `.github/copilot-instructions.md` (already present), `AGENTS.md`, `CODEOWNERS`, issue templates.
-- GitHub Copilot coding-agent configuration: MCP server allowlist, scope guards documented, branch/PR conventions, traceability contract enforced via [docs/PRD.md](../docs/PRD.md).
-- GitHub Actions: `ci.yml` only (lint + test, **no deploy**).
-- ADRs: `0002-defer-hosting-subscription.md` (Proposed), `0003-bicep-as-iac.md` (Proposed), `0004-oidc-federation.md` (Proposed), `0005-cosmos-nosql-for-traces.md` (Proposed). All deferred to the sprint that activates them.
+- `.github/copilot-instructions.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `AGENTS.md`, `.github/CODEOWNERS`, `.github/ISSUE_TEMPLATE/`.
+- GitHub Copilot coding-agent configuration: `.github/copilot/mcp.json` MCP allow-list (initially `github-mcp` only); scope guards documented; branch/PR conventions; traceability contract enforced via [docs/PRD.md](../docs/PRD.md).
+- `.github/workflows/ci.yml`: markdown lint (`markdownlint-cli2`), link check (`lycheeverse/lychee-action`), workflow lint (`actionlint`). **No deploy workflows.**
+- `lychee.toml` at repo root (single source of truth for link-check options).
+- `scripts/preflight.ps1` — local pre-checkin script that mirrors every CI job.
+- ADRs: `0002-runtime-is-github-copilot-coding-agent` (Accepted), `0003-bicep-as-iac` (Proposed), `0004-oidc-federation` (Proposed). Each Proposed ADR names the sprint that promotes it to Accepted.
 
-### Out of Scope (deferred per [SPRINT_PLAN.md §9 Q1](./SPRINT_PLAN.md#9-open-questions--resolutions))
-- Any Azure resource provisioning (Cosmos DB, Key Vault, Log Analytics, App Insights, RG).
-- `infra/main.bicep` and module library — created when a hosting subscription is chosen.
-- `azure.yaml` (azd) and `deploy-*.yml` workflows.
-- OIDC federation between GitHub and Azure (depends on hosting subscription).
-- Entra app registration and Agent ID provisioning (depends on hosting tenant).
-- Any agent logic (Sprint 1).
-- WorkIQ / ADO MCP setup (Sprint 1 / Sprint 2).
-- Private endpoints, `prod` environment (Sprint 6).
+### Out of Scope (per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md))
+- **Any Azure resource provisioning at the platform layer** — no Cosmos DB, no Key Vault, no Log Analytics, no App Insights, no resource groups. The platform owns no Azure infrastructure of its own.
+- Any Python / TypeScript source code, runtime, lint, or test toolchain. The repo is Markdown + YAML + Bicep only (Bicep arrives in Sprint 2 as UC1 *output*).
+- OIDC federation between GitHub and Azure (deferred until a workflow needs to call Azure — earliest Sprint 2 for `az bicep what-if`).
+- Entra app registration / Agent ID provisioning.
+- Any agent prompt file (Sprint 1).
+- WorkIQ / Azure DevOps MCP enablement (Sprint 2 / Sprint 4).
 
 ---
 
@@ -117,48 +88,51 @@ CI" in `NFR-MAINT-001` is vacuously satisfied while no Python exists).
 
 ### S0-1 — Repo scaffold
 **As a** developer
-**I want** a Python project with lint/format/test pre-wired
-**so that** all future code lands with quality gates from day one.
+**I want** the Markdown + GitHub configuration pre-wired with quality gates
+**so that** every future PR lands with markdown lint, link check, and workflow
+lint enforced from day one.
 
 **Acceptance**:
-- [ ] `pip install -e .[dev]` succeeds on a clean clone.
-- [ ] `pytest`, `ruff check .`, `black --check .` all pass.
-- [ ] Pre-commit runs lint + tests on staged Python files.
+- [ ] `scripts/preflight.ps1` runs `markdownlint-cli2`, `lychee`, `actionlint` and exits 0 on a clean clone.
+- [ ] `lychee.toml` at repo root pins link-check options (shared by CI and preflight).
+- [ ] No source-code toolchain (no `pyproject.toml`, no `package.json`, no `tsconfig.json`).
 - [ ] *Implements*: `FR-PLT-001`, `NFR-MAINT-001`.
 
 ### S0-2 — GitHub Copilot coding-agent setup
 **As a** developer
 **I want** the GitHub Copilot coding agent configured for this repo with
-clear scope guards, MCP allowlist, and the traceability contract
+clear scope guards, MCP allow-list, and the traceability contract
 **so that** every Copilot-authored PR follows our conventions from day one.
 
 **Acceptance**:
-- [ ] `.github/copilot-instructions.md` present and current (already done).
-- [ ] `.github/PULL_REQUEST_TEMPLATE.md` requires `FR-*` / `NFR-*` IDs (already done; verifies `NFR-GOV-006`).
-- [ ] `AGENTS.md` documents agent personas in this repo, the MCP servers allowed (GitHub, WorkIQ, ADO once available), and where prompts/skills live.
-- [ ] `CODEOWNERS` covers `agents/`, `tools/`, `infra/`, `docs/`, `.github/`.
-- [ ] Copilot coding agent can pick up an issue, open a feature branch, and produce a PR that passes CI and links to PRD requirement IDs.
+- [ ] `.github/copilot-instructions.md` present and current.
+- [ ] `.github/PULL_REQUEST_TEMPLATE.md` requires `FR-*` / `NFR-*` IDs (verifies `NFR-GOV-006`).
+- [ ] `AGENTS.md` documents each agent's name, owner, trigger, MCP servers in use, side-effect ceiling, and golden-task path.
+- [ ] `.github/copilot/mcp.json` enumerates the allowed MCP servers; additions go through CODEOWNERS-approved PRs.
+- [ ] `.github/CODEOWNERS` covers `agents/`, `infra/`, `docs/`, `.github/`.
+- [ ] `.github/ISSUE_TEMPLATE/smoke-echo.yml` exists; the Copilot coding agent can pick it up, open a feature branch, and produce a PR that passes CI and links to PRD requirement IDs.
 - [ ] *Implements*: `FR-PLT-001`, `NFR-GOV-006`, `NFR-MAINT-002`.
 
 ### S0-3 — CI workflow (no deploy)
 **As a** release engineer
-**I want** GitHub Actions to run lint + test on every PR
+**I want** GitHub Actions to run lint + link check + workflow lint on every PR
 **so that** quality gates fire without needing an Azure subscription.
 
 **Acceptance**:
-- [ ] `.github/workflows/ci.yml` runs `ruff check .`, `black --check .`, `pytest -q` on every PR + push to `main`.
+- [ ] `.github/workflows/ci.yml` runs `markdownlint-cli2`, `lycheeverse/lychee-action`, and `raven-actions/actionlint` on every PR + push to `main`.
 - [ ] Branch protection on `main` requires `ci` green and at least one review.
 - [ ] No workflow references an Azure subscription, tenant, or OIDC client — deploy workflows are deferred.
 - [ ] *Implements*: `NFR-MAINT-001`, `NFR-MAINT-003`.
 
 ### S0-4 — Proposed ADRs for deferred decisions
 **As a** future maintainer
-**I want** the deferred decisions (hosting subscription, IaC stack, OIDC, Cosmos trace store) recorded
+**I want** the deferred decisions (IaC stack, OIDC) recorded as Proposed ADRs
 **so that** the rationale survives until the sprint that activates them.
 
 **Acceptance**:
-- [ ] `docs/adr/0002-defer-hosting-subscription.md` (status `Proposed`) references [SPRINT_PLAN.md §9 Q1](./SPRINT_PLAN.md#9-open-questions--resolutions).
-- [ ] `docs/adr/0003-bicep-as-iac.md`, `0004-oidc-federation.md`, `0005-cosmos-nosql-for-traces.md` exist as `Proposed`, each noting the sprint that will promote them to `Accepted`.
+- [ ] `docs/adr/0002-runtime-is-github-copilot-coding-agent.md` (Accepted) — the runtime decision.
+- [ ] `docs/adr/0003-bicep-as-iac.md` (Proposed) — promoted to Accepted in Sprint 2 when `infra/landing-zone/` lands.
+- [ ] `docs/adr/0004-oidc-federation.md` (Proposed) — promoted when a workflow first needs to call Azure on behalf of UC1.
 - [ ] *Implements*: `NFR-GOV-001`, `NFR-MAINT-002`.
 
 ---
@@ -167,19 +141,19 @@ clear scope guards, MCP allowlist, and the traceability contract
 
 | Artifact | Path |
 |----------|------|
-| Python project | `pyproject.toml`, `agents/__init__.py`, `tools/__init__.py`, `api/__init__.py`, `tests/__init__.py`, `evals/__init__.py` |
-| Pre-commit | `.pre-commit-config.yaml` |
+| Copilot agent config | `.github/copilot-instructions.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `AGENTS.md`, `.github/CODEOWNERS`, `.github/ISSUE_TEMPLATE/smoke-echo.yml`, `.github/copilot/mcp.json` |
 | CI workflow | `.github/workflows/ci.yml` |
-| Copilot agent config | `.github/copilot-instructions.md` (present), `.github/PULL_REQUEST_TEMPLATE.md` (present), `AGENTS.md`, `.github/CODEOWNERS`, `.github/ISSUE_TEMPLATE/*.yml` |
-| Proposed ADRs | `docs/adr/0002-defer-hosting-subscription.md`, `0003-bicep-as-iac.md`, `0004-oidc-federation.md`, `0005-cosmos-nosql-for-traces.md` |
+| Link-check config | `lychee.toml` |
+| Preflight | `scripts/preflight.ps1` |
+| ADRs | `docs/adr/0002-runtime-is-github-copilot-coding-agent.md` (Accepted), `docs/adr/0003-bicep-as-iac.md` (Proposed), `docs/adr/0004-oidc-federation.md` (Proposed) |
 
 ---
 
 ## 6. Dependencies
 
 - A GitHub repository admin to set branch protection and enable the GitHub Copilot coding agent on the repo.
-- Access to the GitHub MCP server in the Copilot agent runtime (already in the workspace).
-- **No Azure subscription required** — deferred per [SPRINT_PLAN.md §9 Q1](./SPRINT_PLAN.md#9-open-questions--resolutions).
+- Access to the GitHub MCP server in the Copilot agent runtime.
+- **No Azure subscription required** (per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md)).
 
 ---
 
@@ -188,15 +162,15 @@ clear scope guards, MCP allowlist, and the traceability contract
 | Risk | Mitigation |
 |------|------------|
 | Copilot coding agent ignores repo conventions | Lock conventions in `.github/copilot-instructions.md` + `AGENTS.md`; reviewer checklist in PR template catches drift. |
-| Pre-commit drag on developer velocity | Limit Sprint 0 hooks to format + lint; full hooks (mypy, eval) come in Sprint 1. |
-| Deferred decisions get forgotten | `Proposed` ADRs link back to [SPRINT_PLAN.md §9](./SPRINT_PLAN.md#9-open-questions--resolutions); each ADR names the sprint that activates it. |
+| CI link-check noise blocks PRs | Configure `lychee.toml` to exclude mail + loopback; allow-list known false-positives. |
+| Deferred decisions get forgotten | Each `Proposed` ADR names the sprint that activates it; SPRINT_PLAN §9 cross-references. |
 
 ---
 
 ## 8. Exit Criteria
 
 - [ ] All user stories above marked done.
-- [ ] `deploy-dev.yml` green on `main`.
+- [ ] CI green on `main`.
 - [ ] M1 demo executed (see below).
 - [ ] Retro completed; any decisions captured as ADRs.
 
@@ -205,11 +179,10 @@ clear scope guards, MCP allowlist, and the traceability contract
 ## 9. Demo Script (M1)
 
 1. Open a freshly cloned repo on a clean machine.
-2. Run `pip install -e .[dev]` → green.
-3. Run `pytest -q && ruff check . && black --check .` → green.
-4. Open a sample issue tagged for the Copilot coding agent; agent opens a feature branch and a PR; CI runs green; PR description includes the requirement IDs the change implements (per the PR template).
-5. Show `.github/copilot-instructions.md`, `AGENTS.md`, and `docs/PRD.md` traceability matrix — explain how the next sprint plugs in.
-6. Walk through the four `Proposed` ADRs and the sprint each will activate in.
+2. Run `scripts/preflight.ps1` → green (markdownlint 0 errors, lychee 0 errors, actionlint pass).
+3. Open the smoke-echo issue (`.github/ISSUE_TEMPLATE/smoke-echo.yml`); the Copilot coding agent opens a feature branch and a draft PR; CI runs green; PR description includes the requirement IDs the change implements (per the PR template).
+4. Show `.github/copilot-instructions.md`, `AGENTS.md`, `.github/copilot/mcp.json`, and `docs/PRD.md` traceability matrix — explain how the next sprint plugs in.
+5. Walk through the three foundation ADRs and the sprint that activates each Proposed ADR.
 
 ---
 

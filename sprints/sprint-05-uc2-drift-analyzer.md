@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 2.0.0 |
-| **Date** | 2026-05-18 |
+| **Version** | 2.1.0 |
+| **Date** | 2026-05-25 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (initial release with Python `agents/drift_analyzer/`, `tools/azure_scan.py`, `tools/diff_engine.py`, `tools/ado_wiki_upsert.py`, `tools/teams_notify.py`, Azure Function Timer Trigger, Cosmos `drift-reports` + `tracked-subscriptions` containers, `agentic-devops` CLI subcommands); 1.0.1 clarified §6 dependency wording after WorkIQ moved to S2; 2.0.0 reframes the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — the scheduler is `.github/workflows/uc2-nightly.yml` (cron → issue per tracked subscription); the agent is `agents/drift-analyzer/AGENT.md` calling Azure MCP for read-only scans + WorkIQ MCP for the spec + Azure DevOps MCP for the wiki upsert; the tracked-subscription registry is a Markdown file at `samples/tracked-subscriptions.md` (or per-customer ADO Wiki page) rather than Cosmos. §3.1 lists per-story reinterpretation; user-story IDs `S5-1..S5-7` are preserved. |
+| **Previous Version** | 1.0.0 (initial release with Python `agents/drift_analyzer/`, `tools/azure_scan.py`, `tools/diff_engine.py`, `tools/ado_wiki_upsert.py`, `tools/teams_notify.py`, Azure Function Timer Trigger, Cosmos `drift-reports` + `tracked-subscriptions` containers, `agentic-devops` CLI subcommands); 1.0.1 clarified §6 dependency wording after WorkIQ moved to S2; 2.0.0 reframed the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) via a §3.1 amendment overlay; 2.1.0 MINOR — removes the 1.x retained-for-traceability text and the §3.1 amendment overlay, rewriting §§3–5, 9 in final form. User-story IDs `S5-1..S5-7` preserved with reinterpreted acceptance criteria. |
 
 > **Window**: 2026-07-20 → 2026-07-31 (2 weeks)
 > **Theme**: Implement **UC2** — scheduled read-only Azure scans that compare
@@ -34,19 +34,20 @@
 ## 1. Goal & Outcomes
 
 A scheduled (nightly + on-demand) **Drift Analyzer Agent** scans tracked Azure
-subscriptions in **read-only** mode, compares them against the latest spec, and
-produces a gap report. The SA reviews the report; if a change is approved,
-remediation flows through UC1 (regenerate Bicep params, staging deploy, PR
-opened, UC3 reviews).
+subscriptions in **read-only** mode via Azure MCP, compares them against the
+canonical spec fetched from WorkIQ MCP, and produces a gap report. The SA
+reviews the report; if a change is approved, remediation flows through UC1
+(regenerate `.bicepparam`, staging deploy, ADO PR opened, UC3 reviews).
 
 End-of-sprint capability:
-
-```
-agentic-devops check-drift --subscription <id>        # on-demand
-# plus a nightly Logic App / Function timer trigger
-```
-
-→ drift report in Cosmos DB + ADO Wiki page + email/Teams summary to SA.
+- **Nightly**: `.github/workflows/uc2-nightly.yml` cron opens one drift-scan
+  issue per tracked subscription from `.github/ISSUE_TEMPLATE/uc2-drift-scan.yml`.
+- **On-demand**: SA files the same issue manually.
+- The Copilot coding agent picks up the issue, runs the read-only scan via
+  Azure MCP, diffs against the WorkIQ spec, writes the gap report as the
+  issue body + a structured comment, upserts the customer's ADO Wiki page
+  `/Drift/<subscriptionId>` via Azure DevOps MCP, and (for `severity:error`)
+  triggers a Teams notification via a GitHub Actions step + webhook secret.
 
 ---
 
@@ -58,119 +59,117 @@ agentic-devops check-drift --subscription <id>        # on-demand
 sequenceDiagram
     autonumber
     actor SA
-    participant Sched as Timer Trigger
-    participant Drift as Drift Analyzer Agent
-    participant Az as Azure Mgmt APIs<br/>(read-only)
-    participant WIQ as WorkIQ
-    participant Spec as UC1 Spec Parser
+    participant GH as GitHub (issue + PR)
+    participant Cop as Copilot coding agent<br/>(agents/drift-analyzer/AGENT.md)
+    participant Az as Azure MCP (read-only)
+    participant WIQ as WorkIQ MCP
+    participant ADO as Azure DevOps MCP
+    participant Teams as Teams (webhook)
 
-    Sched->>Drift: nightly scan
-    Drift->>Az: enumerate resources + config
-    Drift->>WIQ: fetch current spec
-    Drift->>Drift: diff actual vs spec
-    Drift-->>SA: drift report (Wiki + email)
-    SA->>SA: decide: accept reality / fix to spec
-    SA->>Spec: trigger UC1 with updated spec
-    Note over Spec: UC1 flow → PR → UC3 review
+    Note over GH: uc2-nightly.yml cron OR<br/>SA files uc2-drift-scan.yml issue
+    GH->>Cop: invoke (one issue per tracked sub)
+    Cop->>Az: enumerate RGs + resource configs (Reader)
+    Cop->>WIQ: fetch canonical spec
+    Cop->>Cop: diff actual vs spec; assign severities
+    Cop-->>GH: drift report (issue body + structured comment)
+    Cop->>ADO: upsert /Drift/<subId> wiki page
+    alt severity:error present
+        GH->>Teams: notify subscription owner
+    end
+    SA->>GH: file UC1 remediation issue (manual decision)
+    Note over GH: UC1 chain → ADO PR → UC3 review
 ```
 
 ---
 
 ## 3. Scope
 
-### 3.1 Runtime Amendment (per ADR-0002)
-
-Reinterpretation of in-scope items:
-
-| Original (1.0.1) | Sprint 5 v2.0.0 equivalent |
-|------------------|---------------------------|
-| `agents/drift_analyzer/` Python package | `agents/drift-analyzer/AGENT.md` prompt file + `agents/drift-analyzer/golden-tasks.md` fixtures. |
-| `tools/azure_scan.py` | Azure MCP read tools (`mcp_azure_mcp_group_resource_list`, `mcp_azure_mcp_storage_*`, etc.) called by the agent. |
-| `tools/diff_engine.py` (Python diff) | Diff computed by the agent against the spec returned by WorkIQ MCP. Severity rules are encoded in `agents/drift-analyzer/AGENT.md`. Stable ordering enforced by output-contract spec (sorted by `resourcePath` then `property`). |
-| `tools/ado_wiki_upsert.py` | Azure DevOps MCP `wiki-upsert` tool. |
-| `tools/teams_notify.py` | GitHub Actions step posting to Teams via a configured webhook secret. Triggered by the agent posting a `severity:error` label on the issue. |
-| `api/drift_timer/` (Azure Function timer) | `.github/workflows/uc2-nightly.yml` — GitHub Actions cron workflow that opens one issue per tracked subscription using `.github/ISSUE_TEMPLATE/uc2-drift-scan.yml`. |
-| Cosmos container `drift-reports` with `/subscriptionId` partition + TTL 180d | Drift reports are the issue body + a structured comment thread on the drift-scan issue. Long-term archive is the Git history of the customer's ADO Wiki page `/Drift/<subscriptionId>`. |
-| Cosmos container `tracked-subscriptions` partitioned by `/tenantId` | Markdown registry at `samples/tracked-subscriptions.md` (one row per subscription) or, per customer, in their ADO Wiki. CRUD via PRs to that file. |
-| `agentic-devops track-subscription add|list|remove` CLI | Issue from `.github/ISSUE_TEMPLATE/uc2-track-subscription.yml`; the agent updates the Markdown registry. |
-| Read-only Entra Agent ID `agentic-devops-drift-reader-<env>` | Read-only service principal scoped to `Reader` on each tracked subscription, federated to GitHub via WIF. |
-| `evals/tasks/uc2/*.yaml` + fixtures | `agents/drift-analyzer/golden-tasks.md` (4 fixtures: clean, tag-drift, missing-resource, extra-unsanctioned). |
-| `docs/runbooks/uc2-drift.md` | Retained — still Markdown. |
-
-User-story IDs `S5-1..S5-7` preserved.
-
-### In Scope (original v1.0.1 text retained for traceability)
-- Drift Analyzer Agent (`agents/drift_analyzer/`).
-- Read-only Azure scan via `azure-mgmt-resource`, `azure-mgmt-network`, `azure-mgmt-storage`, etc.
-- Diff engine that handles resource-level + property-level comparisons with severity tiers (`info | warn | error`).
-- Subscription registry (which subscriptions are tracked + which spec is canonical for each).
-- Scheduler: Azure Function Timer Trigger (`0 0 2 * * *` UTC).
-- On-demand CLI: `agentic-devops check-drift --subscription <id>`.
-- Report sinks: Cosmos DB (`drift-reports`), ADO Wiki page (one per subscription), Teams/email summary.
-- Read-only Entra Agent ID for the drift agent.
-- Evals: 4 fixtures (no drift, tag drift, missing resource, extra unsanctioned resource).
+### In Scope
+- `agents/drift-analyzer/AGENT.md` — Identity, Scope, Tools (Azure MCP read tools, WorkIQ MCP, Azure DevOps MCP wiki-upsert), Refusal Rules (no Azure write, no UC1 trigger without SA-filed issue), Output Contract (issue body + structured comment + ADO Wiki Markdown).
+- `agents/drift-analyzer/golden-tasks.md` — 4 fixtures: clean (no drift), tag drift, missing resource, extra unsanctioned resource.
+- `.github/workflows/uc2-nightly.yml` — cron-triggered GitHub Actions workflow (default `0 2 * * *` UTC) that reads `samples/tracked-subscriptions.md`, opens one drift-scan issue per row using `.github/ISSUE_TEMPLATE/uc2-drift-scan.yml`. Missed runs are retried on next cron tick (idempotent by `scanDate + subscriptionId` label).
+- `.github/ISSUE_TEMPLATE/uc2-drift-scan.yml` — on-demand trigger (same path as nightly).
+- `.github/ISSUE_TEMPLATE/uc2-track-subscription.yml` — issue template requesting a new tracked subscription; the agent opens a PR to `samples/tracked-subscriptions.md` adding/removing the row.
+- `samples/tracked-subscriptions.md` — the registry. One row per subscription: `subscriptionId`, `tenantId`, `specRef` (WorkIQ link), `owner`, `severityOverrides`. CRUD via PR.
+- `.github/copilot/mcp.json` — `azure-mcp` configured with a `Reader`-scoped service principal federated via WIF (per-subscription scope, not subscription-wide); `azure-devops-mcp` scoped to `Wiki (R/W)` only for this agent; `workiq-mcp` read scope.
+- Severity rules encoded in `agents/drift-analyzer/AGENT.md`: missing required tag = `error`; extra unsanctioned resource = `warn`; drifted SKU on non-prod = `info`. Output sorted by `resourcePath` then `property` for stable diff between runs.
+- Teams notification implemented as a GitHub Actions step in `uc2-nightly.yml` that fires only when the issue carries `severity:error` (label applied by the agent). Webhook stored in GitHub Actions secrets.
+- `AGENTS.md` updated: `drift-analyzer` row with trigger, MCP servers, side-effect ceiling (`write` — issues + ADO wiki only; UC1 remediation routed through human-filed issues).
 
 ### Out of Scope
-- Auto-remediation (intentionally — keep humans in the loop per governance).
+- Auto-remediation (intentional — humans in the loop per governance).
 - Cross-subscription / management-group rollups (later).
 - Non-Azure cloud scans (out of platform scope).
+- Any platform Cosmos / Function timer / App Insights wiring — per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) the platform owns no Azure infrastructure.
 
 ---
 
 ## 4. User Stories & Acceptance Criteria
 
-### S5-1 — Subscription registry
+### S5-1 — Tracked-subscription registry (Markdown)
 **As a** platform owner
 **I want** a registry of tracked subscriptions and their canonical specs
 **so that** the agent knows what to scan and what to compare against.
 
 **Acceptance**:
-- [ ] Registry stored in Cosmos DB container `tracked-subscriptions`, partition `/tenantId`.
-- [ ] Entry: `subscriptionId`, `specRef` (WorkIQ link), `owner`, `schedule`, `severityOverrides`.
-- [ ] CRUD via CLI: `agentic-devops track-subscription add|list|remove`.
+- [ ] `samples/tracked-subscriptions.md` lists one row per subscription with: `subscriptionId`, `tenantId`, `specRef` (WorkIQ link/ID), `owner`, `severityOverrides` (optional inline JSON).
+- [ ] Add/remove flows via `.github/ISSUE_TEMPLATE/uc2-track-subscription.yml` → the agent opens a PR editing the file.
+- [ ] PRs to this file are CODEOWNERS-gated (platform owners).
+- [ ] *Implements*: `FR-UC2-001`.
 
-### S5-2 — Read-only Azure scan
+### S5-2 — Read-only Azure scan via Azure MCP
 **As an** auditor
 **I want** the agent to scan all resources and key properties in a subscription
 **so that** drift detection is comprehensive.
 
 **Acceptance**:
-- [ ] Scan covers: resource groups, VNETs/subnets, NSGs, storage accounts, key vaults, app services, function apps (configurable per resource type).
-- [ ] Agent identity has only `Reader` + `Reader and Data Access` where required — confirmed by negative test (write attempts return 403).
+- [ ] `agents/drift-analyzer/AGENT.md` declares Azure MCP read tools with side-effect ceiling `read`. Refusal rule blocks any `write`/`deploy`/`delete` tool call.
+- [ ] Scan covers resource groups, VNETs/subnets, NSGs, storage accounts, key vaults, app services, function apps (configurable in the prompt per resource type).
+- [ ] Service principal scoped to `Reader` (+ `Reader and Data Access` where required) on each tracked subscription. Verified by negative-path golden task: write attempts return 403.
 - [ ] Scan completes for a 200-resource subscription in < 5 min.
+- [ ] *Implements*: `FR-UC2-002`, `NFR-SEC-001`.
 
-### S5-3 — Diff engine with severities
+### S5-3 — Diff engine with severities (stable ordering)
 **Acceptance**:
-- [ ] Diff produces a list of `{resourcePath, property, expected, actual, severity}` items.
-- [ ] Severity rules: missing required tag = `error`, extra unsanctioned resource = `warn`, drifted SKU on non-prod = `info`.
-- [ ] Stable ordering so repeat reports diff cleanly.
+- [ ] Agent emits a list of `{resourcePath, property, expected, actual, severity}` items rendered as a Markdown table in the issue body.
+- [ ] Severity rules: missing required tag = `error`; extra unsanctioned resource = `warn`; drifted SKU on non-prod = `info`.
+- [ ] Output sorted by `resourcePath` then `property` so repeat reports diff cleanly between runs (asserted by golden-task fixture).
+- [ ] `severityOverrides` from the registry row are honoured.
+- [ ] *Implements*: `FR-UC2-003`, `FR-UC2-004`.
 
-### S5-4 — Report sinks
+### S5-4 — Report sinks (issue + ADO Wiki + Teams)
 **Acceptance**:
-- [ ] Cosmos DB `drift-reports` container; partition `/subscriptionId`; TTL 180 days.
-- [ ] ADO Wiki page upserted at `/Drift/<subscriptionId>` with a Markdown table.
-- [ ] Teams/email message sent to the subscription owner summarizing counts by severity + link to Wiki.
-- [ ] If zero drift, only a single line is logged (no spammy Teams ping).
+- [ ] Drift report posted to the drift-scan issue body (high-level) plus a structured comment carrying the detailed Markdown table. The issue is the persistent artefact; long-term history is the Git log of the customer's ADO Wiki page.
+- [ ] Agent calls Azure DevOps MCP `wiki-upsert` to upsert the customer ADO Wiki page at `/Drift/<subscriptionId>` with the same Markdown table. Side-effect ceiling `write`.
+- [ ] When the report contains `severity:error` items, the agent applies the `severity:error` label on the issue; the `uc2-nightly.yml` follow-up step posts to a Teams channel via a webhook secret.
+- [ ] Zero-drift runs: agent posts a one-line "no drift" comment, applies `severity:none`, no Teams ping.
+- [ ] *Implements*: `FR-UC2-005`, `NFR-OPS-001`.
 
-### S5-5 — Scheduler + on-demand
+### S5-5 — Scheduler + on-demand trigger
 **Acceptance**:
-- [ ] Timer-trigger function runs nightly at 02:00 UTC; missed runs retried up to 3 times.
-- [ ] CLI `check-drift` returns immediately for `<id>` already in scan window (no duplicate work).
-- [ ] Each scheduled run creates one Cosmos run document; idempotent by `scanDate + subscriptionId`.
+- [ ] `.github/workflows/uc2-nightly.yml` runs on `cron: '0 2 * * *'` UTC. Reads `samples/tracked-subscriptions.md`; opens one issue per row from `uc2-drift-scan.yml`.
+- [ ] Idempotency: workflow labels each issue with `uc2-scan-<yyyy-mm-dd>-<subId>`; a re-run within the same UTC day skips already-labelled issues.
+- [ ] On-demand: an SA can file the issue manually for the same outcome; the agent does not de-dupe against the manual issue (a manual scan is always intentional).
+- [ ] Workflow logs run history; failed runs surface a workflow-failure issue.
+- [ ] *Implements*: `FR-UC2-006`, `NFR-OPS-003`.
 
-### S5-6 — Route remediation through UC1
+### S5-6 — Remediation routed through UC1
 **As an** SA
 **I want** to accept the drift report and trigger UC1 with the latest spec
 **so that** changes follow the standard review path.
 
 **Acceptance**:
-- [ ] `agentic-devops remediate-drift <reportId>` opens a pre-filled UC1 command with the spec link.
-- [ ] No drift-induced changes deploy without going through UC1's staging + PR + UC3 cycle.
+- [ ] Agent's drift report includes a "Remediate via UC1" section showing the WorkIQ spec link and a copy-paste-ready issue body for `.github/ISSUE_TEMPLATE/uc1-build-subscription.yml`.
+- [ ] The drift agent **never** triggers UC1 automatically. The SA decides and files a new UC1 issue.
+- [ ] No drift-induced changes deploy without going through UC1's staging + ADO PR + UC3 review cycle (refusal rule enforced).
+- [ ] *Implements*: `FR-UC2-007`, `NFR-GOV-002`.
 
-### S5-7 — Evals
+### S5-7 — Golden tasks
 **Acceptance**:
-- [ ] 4 fixture subscriptions: clean, tag-drift, missing-resource, extra-unsanctioned-resource.
-- [ ] Eval pass rate ≥ 95 %.
+- [ ] 4 fixtures in `agents/drift-analyzer/golden-tasks.md`: clean (no drift), tag-drift, missing-resource, extra-unsanctioned-resource.
+- [ ] Each fixture has `requirement:` front-matter listing FR/NFR IDs.
+- [ ] Replay via `eval-goldens.yml` (or manual) — pass rate ≥ 95 %.
+- [ ] *Implements*: `NFR-GOV-006`, `FR-PLT-003`.
 
 ---
 
@@ -178,20 +177,22 @@ User-story IDs `S5-1..S5-7` preserved.
 
 | Artifact | Path |
 |----------|------|
-| Drift Analyzer Agent | `agents/drift_analyzer/` |
-| Tools | `tools/azure_scan.py`, `tools/diff_engine.py`, `tools/ado_wiki_upsert.py`, `tools/teams_notify.py` |
-| Scheduler | `api/drift_timer/` (Azure Function timer trigger) |
-| Registry | `tools/sub_registry.py`, Cosmos container `tracked-subscriptions` |
-| Evals | `evals/tasks/uc2/*.yaml` + fixtures |
+| Drift Analyzer prompt | `agents/drift-analyzer/AGENT.md` |
+| Golden tasks | `agents/drift-analyzer/golden-tasks.md` |
+| Nightly scheduler | `.github/workflows/uc2-nightly.yml` |
+| Issue templates | `.github/ISSUE_TEMPLATE/uc2-drift-scan.yml`, `.github/ISSUE_TEMPLATE/uc2-track-subscription.yml` |
+| Tracked-subscription registry | `samples/tracked-subscriptions.md` |
+| MCP allow-list update | `.github/copilot/mcp.json` (`azure-mcp` Reader-scoped; `azure-devops-mcp` Wiki-scoped for this agent; `workiq-mcp` read) |
+| Agent registry | `AGENTS.md` (drift-analyzer row) |
 | Runbook | `docs/runbooks/uc2-drift.md` |
 
 ---
 
 ## 6. Dependencies
 
-- Sprint 3 complete (WorkIQ MCP Excel ingestion, OBO, full UC1 deployment flow; WorkIQ MCP itself was introduced in [Sprint 2](./sprint-02-uc1-spec-parser-happy-path.md)).
-- Sprint 4 complete (UC3 will review any drift-driven PRs).
-- A tracked subscription with a known canonical spec (use the staging subscription from Sprint 2/3 demos).
+- [Sprint 3](./sprint-03-uc1-end-to-end.md) complete — WorkIQ MCP, OBO, full UC1 deployment flow.
+- [Sprint 4](./sprint-04-uc3-pr-review-agent.md) complete — UC3 will review any drift-driven ADO PRs.
+- At least one tracked subscription with a known canonical spec (the staging subscription from Sprints 2/3 is the natural fixture).
 
 ---
 
@@ -199,10 +200,11 @@ User-story IDs `S5-1..S5-7` preserved.
 
 | Risk | Mitigation |
 |------|------------|
-| Read-only scope leaks (agent over-permitted) | Hard-code `Reader` role at provisioning; negative tests on write attempts; quarterly access review. |
-| Scan exceeds 5-min function timeout | Use Durable Functions (fan-out) or batched scans per resource type. |
-| Noisy reports cause alert fatigue | Severity tiers + only `error` triggers Teams notification; weekly digest for `warn`/`info`. |
-| Spec drift ≠ deployed reality (spec is wrong) | Provide explicit `accept-as-spec` flow that updates the spec via UC1 with documented rationale. |
+| Read-only scope leaks (agent over-permitted) | `Reader` role pinned in the MCP service principal; negative-path golden task asserts write refusal; quarterly access review documented in runbook. |
+| Scan exceeds workflow timeout | Fan-out: nightly workflow opens one issue per subscription; per-subscription scans run in parallel via the agent's run history (no single job covers many subscriptions). |
+| Noisy reports cause alert fatigue | Severity tiers + only `severity:error` triggers Teams notification; weekly digest for `warn`/`info`. |
+| Spec drift ≠ deployed reality (spec is wrong) | Drift report's "Remediate via UC1" section explicitly offers both directions: accept reality (update spec in WorkIQ + new UC1 issue) or fix the subscription (UC1 issue with current spec). |
+| Idempotency gap in nightly cron | Per-day issue label gate; failed runs surface a workflow-failure issue rather than retry blindly. |
 
 ---
 
@@ -211,20 +213,19 @@ User-story IDs `S5-1..S5-7` preserved.
 - [ ] All user stories done.
 - [ ] M6 demo executed.
 - [ ] Nightly scan green for 5 consecutive runs.
-- [ ] Eval pass rate ≥ 95 %.
-- [ ] Negative test: agent identity write attempt returns 403.
+- [ ] All 4 golden-task fixtures pass (≥ 95 %).
+- [ ] Negative-path golden task: agent identity write attempt returns 403.
 
 ---
 
 ## 9. Demo Script (M6)
 
-1. Run `agentic-devops track-subscription add --id <stg-sub-id> --spec <sharepoint-url>`.
+1. Open a PR adding the staging subscription to `samples/tracked-subscriptions.md` via the `uc2-track-subscription.yml` issue → review → merge.
 2. Manually tweak a tag on a storage account in the tracked subscription (introduce drift).
-3. Run `agentic-devops check-drift --subscription <stg-sub-id>`.
-4. Show: Cosmos drift report, ADO Wiki page updated, Teams message to subscription owner.
-5. Run `agentic-devops remediate-drift <reportId>` → UC1 fires, staging deploy + PR opened.
-6. UC3 (Sprint 4) reviews the PR automatically — full virtuous cycle visible.
-7. Show timer trigger history in Azure Monitor.
+3. Manually trigger `.github/workflows/uc2-nightly.yml` (`workflow_dispatch`) — or file the `uc2-drift-scan.yml` issue directly.
+4. Watch the Copilot coding agent process the drift-scan issue: scan via Azure MCP → diff against WorkIQ spec → post Markdown drift table to the issue body + structured comment, apply `severity:error` label, upsert the customer's ADO Wiki page `/Drift/<subscriptionId>`, fire the Teams webhook step.
+5. SA opens a UC1 remediation issue using the copy-paste block from the drift report → UC1 chain fires → ADO PR opened → UC3 (Sprint 4) reviews automatically → full virtuous cycle.
+6. Show the negative path: agent identity attempts a write via Azure MCP → 403 (golden task).
 
 ---
 
