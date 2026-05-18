@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0.0 |
-| **Date** | 2026-05-18 |
+| **Version** | 1.1.0 |
+| **Date** | 2026-05-25 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release; aligned with [ADR-0002 Runtime is GitHub Copilot coding agent](docs/adr/0002-runtime-is-github-copilot-coding-agent.md)) |
+| **Previous Version** | 1.0.0 (initial release; aligned with [ADR-0002 Runtime is GitHub Copilot coding agent](docs/adr/0002-runtime-is-github-copilot-coding-agent.md)); 1.1.0 marks `orchestrator` ready (Sprint 1 MVP shipped) |
 
 > **Purpose**: Top-level registry of every agent realised in this repository.
 > The **GitHub Copilot coding agent** reads this file on every run to learn
@@ -35,7 +35,7 @@
 
 | Agent | Use Case | Owner | Trigger | MCP Servers | Side-Effect Ceiling | Prompt | Golden Tasks |
 |-------|----------|-------|---------|-------------|----------------------|--------|--------------|
-| `orchestrator` | Cross-cutting | @urruegg | `@copilot` mention on any issue | `github-mcp` | `write` | `agents/orchestrator/AGENT.md` *(planned, S1)* | `agents/orchestrator/golden-tasks.md` *(planned, S1)* |
+| `orchestrator` | Cross-cutting | @urruegg | `@copilot` mention on any issue, or issue from [`smoke-echo.yml`](.github/ISSUE_TEMPLATE/smoke-echo.yml) | `github-mcp` | `write` | [`agents/orchestrator/AGENT.md`](agents/orchestrator/AGENT.md) | [`agents/orchestrator/golden-tasks.md`](agents/orchestrator/golden-tasks.md) |
 | `spec-parser` | UC1 — Build Subscription | @urruegg | Issue from [`uc1-build-subscription.yml`](.github/ISSUE_TEMPLATE/uc1-build-subscription.yml) | `github-mcp`, `workiq-mcp`, `azure-mcp`, `azure-devops-mcp` | `deploy` (UC1 outputs only, behind `approved-to-apply`) | `agents/spec-parser/AGENT.md` *(planned, S2)* | `agents/spec-parser/golden-tasks.md` *(planned, S2)* |
 | `pr-review` | UC3 — PR Review | @urruegg | ADO Service Hook → `repository_dispatch` → issue from [`uc3-pr-review.yml`](.github/ISSUE_TEMPLATE/uc3-pr-review.yml) | `github-mcp`, `azure-devops-mcp` | `write` (ADO comments only) | `agents/pr-review/AGENT.md` *(planned, S4)* | `agents/pr-review/golden-tasks.md` *(planned, S4)* |
 | `drift-analyzer` | UC2 — Drift Detection | @urruegg | `.github/workflows/uc2-nightly.yml` (schedule) → issue from [`uc2-drift-scan.yml`](.github/ISSUE_TEMPLATE/uc2-drift-scan.yml) | `github-mcp`, `azure-mcp`, `azure-devops-mcp` | `write` (ADO Wiki + GH issue only; remediation PRs routed through `spec-parser`) | `agents/drift-analyzer/AGENT.md` *(planned, S5)* | `agents/drift-analyzer/golden-tasks.md` *(planned, S5)* |
