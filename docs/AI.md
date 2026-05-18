@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release; 1.1.0 added §2.1 model-provider abstraction) |
 
 > **Related**: [SOLUTION_OVERVIEW.md](SOLUTION_OVERVIEW.md), [SECURITY.md](SECURITY.md).
 

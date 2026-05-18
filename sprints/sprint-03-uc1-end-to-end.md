@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0 (introduced WorkIQ in S3) |
+| **Previous Version** | 1.0.0 (introduced WorkIQ in S3); 1.1.0 re-scoped to Excel + Policy + PR (WorkIQ moved to S2) |
 
 > **Window**: 2026-06-22 → 2026-07-03 (2 weeks)
 > **Theme**: Close out **UC1** — extend WorkIQ MCP (introduced in [Sprint 2](./sprint-02-uc1-spec-parser-happy-path.md))

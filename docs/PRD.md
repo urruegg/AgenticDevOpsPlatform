@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.2.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release; 1.1.0 added §7 traceability matrix; 1.2.0 added `FR-PLT-007`) |
 
 > **Purpose**: Capture the **what** of the Agentic DevOps Platform — personas,
 > user journeys, functional requirements, and non-functional requirements —

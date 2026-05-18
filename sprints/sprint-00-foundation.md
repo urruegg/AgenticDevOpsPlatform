@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release; 1.1.0 narrowed scope to GitHub Copilot coding-agent setup per SPRINT_PLAN §9 Q1) |
 
 > **Window**: 2026-05-18 → 2026-05-22 (1 week bootstrap)
 > **Theme**: Bootstrap the repository and the **GitHub Copilot coding-agent**

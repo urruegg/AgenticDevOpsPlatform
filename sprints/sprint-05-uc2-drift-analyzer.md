@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.0.1 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release); 1.0.1 clarified §6 dependency wording after WorkIQ moved to S2 |
 
 > **Window**: 2026-07-20 → 2026-07-31 (2 weeks)
 > **Theme**: Implement **UC2** — scheduled read-only Azure scans that compare

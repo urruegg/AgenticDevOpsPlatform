@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release) |
 
 This repository hosts a sample **Agentic DevOps Platform**: a system where AI agents
 plan, execute, and observe DevOps workflows (CI/CD, infrastructure provisioning,
@@ -27,6 +27,7 @@ this repo.
 6. [Commit & PR Conventions](#6-commit--pr-conventions)
 7. [Code Review Checklist](#7-code-review-checklist)
 8. [Naming Conventions](#8-naming-conventions)
+9. [Document Versioning](#9-document-versioning)
 
 ---
 
@@ -289,6 +290,11 @@ are satisfied:
   `docs/PRD.md` §7 (traceability matrix) is updated in the same PR. Tests and
   eval YAMLs reference the requirement ID(s) they verify (`requirement:` key or
   docstring tag, e.g. `"""Verifies FR-UC1-005"""`).
+- **Versioning contract**: Any doc edited in the PR has its **Version** header
+  bumped per the rules in [§9 Document Versioning](#9-document-versioning), and
+  the **Previous Version** field is updated. If the PR makes no semantic change
+  to a doc (e.g. pure formatting in a CI commit), the contract is satisfied by a
+  PATCH bump.
 - **Impact contract**: PR includes API, infrastructure, security, and eval
   impact statements. If impact is none, PR states `none` explicitly.
 - **Review handoff contract**: PR lists residual risks/open questions and the
@@ -304,6 +310,7 @@ Before approving a PR, verify:
 - [ ] New agent tools have integration tests and a declared input/output schema
 - [ ] Prompt or agent-behavior changes include eval results
 - [ ] PR lists the `FR-*` / `NFR-*` IDs it implements; `docs/PRD.md` §7 is consistent
+- [ ] Every edited doc has its **Version** header bumped per [§9 Document Versioning](#9-document-versioning)
 - [ ] No hard-coded secrets, subscription IDs, tenant IDs, URLs, or resource names
 - [ ] New endpoints require authentication unless explicitly justified
 - [ ] Error handling is structured and never leaks secrets to clients
@@ -332,3 +339,42 @@ Before approving a PR, verify:
 - **Git tags**: `vX.Y.Z` — managed by release tooling, never manual.
 - **Agent tool names**: `verb_noun` snake_case (`deploy_bicep`, `query_log_analytics`,
   `restart_app_service`).
+
+---
+
+## 9. Document Versioning
+
+Every Markdown document in `docs/`, `sprints/`, `.github/`, and the root
+`README.md` carries a version header (`Version`, `Date`, `Author`, `Status`,
+`Previous Version`). Doc versions follow **[Semantic Versioning 2.0](https://semver.org/)**
+adapted for prose:
+
+| Bump | When | Examples |
+|------|------|----------|
+| **MAJOR** (`X.0.0`) | Breaking: rename/remove an identifier other docs depend on, reverse a previously-recorded decision, restructure headings so existing anchor links break, break a published contract. | Renaming `FR-UC1-005`; reversing SPRINT_PLAN §9 Q2; renaming a top-level section. |
+| **MINOR** (`x.Y.0`) | Additive: new sections, new requirements, new stories, new decisions, refined wording that changes meaning but does not break IDs or anchors. | Adding the §9 decisions table; adding a new user story; adding a new FR/NFR row. |
+| **PATCH** (`x.y.Z`) | Editorial: typos, formatting, link-target fixes, markdownlint fixes, tightening with no semantic change. | Fixing a typo; converting a 2-tuple version to a 3-tuple; reflowing a paragraph. |
+
+### Rules
+- Use the **three-component** form (`X.Y.Z`). Never `1.0` or `1`.
+- Every PR that edits a doc must bump its `Version` and update `Previous Version`
+  to the prior value (with a short parenthetical hint, e.g. `1.1.0 (added §7 matrix)`).
+- Multiple bumps in a single PR collapse to **one** bump at the highest level
+  applicable across the changes (e.g. an additive change plus typo fix = MINOR).
+- A **MAJOR** bump must be backed by an ADR under `docs/adr/` explaining the
+  break and migration path for any consumer that referenced the old IDs/anchors.
+- The `Date` field is bumped only when the `Version` is bumped.
+- Doc versions are **independent** from Git tag releases (`vX.Y.Z`). Git tags
+  version the software; doc versions version the prose.
+- ADRs (`docs/adr/NNNN-*.md`) use their `Status` field (Proposed → Accepted →
+  Superseded) and do **not** require a SemVer header — supersession is recorded
+  by linking the new ADR.
+- When a previously-deferred decision becomes binding (e.g. SPRINT_PLAN §9 row
+  reversed or refined), bump the document's MINOR (refinement) or MAJOR
+  (reversal) and link to the superseding ADR.
+
+### Examples in this repo
+- Adding **§7 Traceability Matrix** to `docs/PRD.md` → MINOR (1.0.0 → 1.1.0).
+- Adding `FR-PLT-007` after the matrix exists → another MINOR (1.1.0 → 1.2.0).
+- Renaming `FR-UC1-005` → MAJOR (must add an ADR).
+- Fixing a typo in a sprint header → PATCH (1.1.0 → 1.1.1).

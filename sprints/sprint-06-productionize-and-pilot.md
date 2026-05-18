@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0 (pilot BU onboarding) |
+| **Previous Version** | 1.0.0 (pilot BU onboarding); 1.1.0 reframed as PRD-driven pilot demo per SPRINT_PLAN §9 Q4 |
 
 > **Window**: 2026-08-03 → 2026-08-14 (2 weeks)
 > **Theme**: Harden the platform for **pilot demonstration**: centralized

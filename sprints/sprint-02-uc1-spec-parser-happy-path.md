@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0 (JSON-spec happy path) |
+| **Previous Version** | 1.0.0 (JSON-spec happy path); 1.1.0 re-scoped to WorkIQ MCP per SPRINT_PLAN §9 Q2 |
 
 > **Window**: 2026-06-08 → 2026-06-19 (2 weeks)
 > **Theme**: First vertical slice of **UC1** — the GitHub Copilot Agent connects

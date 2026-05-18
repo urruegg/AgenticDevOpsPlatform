@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release); 1.1.0 added S4-7 configurable trigger filter per SPRINT_PLAN §9 Q5 |
 
 > **Window**: 2026-07-06 → 2026-07-17 (2 weeks)
 > **Theme**: Implement **UC3** — an event-driven PR Review Agent that summarizes

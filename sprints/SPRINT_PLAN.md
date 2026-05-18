@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.2.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release; 1.1.0 added §9 decisions table; 1.2.0 propagated decisions through §2/§3/§5/§6/§8) |
 
 > **Purpose**: Sequencing proposal for the seven sprints that take the Agentic
 > DevOps Platform from an empty repo to a pilot-ready solution covering all
