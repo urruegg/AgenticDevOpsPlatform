@@ -35,27 +35,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      # Uses lychee (Rust) instead of npm `markdown-link-check`, which is
+      # broken on Node 20 due to a transitive `marked` ESM/CJS conflict
+      # (ERR_REQUIRE_ESM in `markdown-link-extractor`).
+      - name: Link check (lychee)
+        uses: lycheeverse/lychee-action@v2
         with:
-          node-version: '20'
-
-      - name: Install markdown-link-check
-        run: npm install -g markdown-link-check@3.12.2
-
-      - name: Check links
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s globstar nullglob
-          status=0
-          for f in docs/**/*.md sprints/*.md .github/*.md AGENTS.md README.md; do
-            [ -f "$f" ] || continue
-            echo "::group::$f"
-            markdown-link-check --quiet "$f" || status=1
-            echo "::endgroup::"
-          done
-          exit "$status"
+          args: >-
+            --no-progress
+            --include-fragments
+            --exclude-mail
+            --exclude-loopback
+            docs/**/*.md
+            sprints/*.md
+            .github/*.md
+            AGENTS.md
+            README.md
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   actionlint:
     name: actionlint (workflows)
