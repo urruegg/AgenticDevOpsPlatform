@@ -31,14 +31,29 @@ transparency, accountability.
 
 ## 2. Model Selection
 
-| Use Case | Recommended Model | Rationale |
-|----------|-------------------|-----------|
-| Orchestrator reasoning | TBD (e.g., GPT-4o / GPT-5) | High reasoning, tool-use quality |
-| Spec parsing / structured extraction | TBD | Cost-efficient, structured output |
-| PR review summarization | TBD | Long-context, cost-balanced |
-| Drift analysis | TBD | Code-aware |
+### 2.1 Model-Provider Abstraction (mandatory)
 
-*Re-evaluate quarterly against Microsoft Foundry catalog.*
+Per [sprints/SPRINT_PLAN.md §9 Q3](../sprints/SPRINT_PLAN.md#9-open-questions--resolutions),
+the platform stays **model-independent** until pilot scale needs justify a
+specific choice. To keep that option open:
+
+- All agents call the LLM through a **provider interface** (`agents/llm/provider.py` *(planned)*) that exposes `complete`, `chat`, and `tool_call` against an opaque `ModelHandle` — never a vendor-specific SDK directly.
+- The provider is selected via configuration (`AGENTIC_DEVOPS_LLM_PROVIDER=azureopenai|foundry|openai|...`), never hard-coded in agent code.
+- Tool/skill code must not import vendor SDK modules. Vendor specifics live behind the provider package only.
+- Evals are written against **capabilities** (reasoning depth, tool-use fidelity, structured-output quality) and **must pass on at least two providers** in CI to detect lock-in regressions.
+- Switching providers must require **no agent or prompt change** — only configuration.
+- A swap is recorded as an ADR (`docs/adr/00NN-model-provider-swap.md`) noting eval deltas, cost, latency, and content-filter behaviour.
+
+### 2.2 Capability Map (no model names yet)
+
+| Use Case | Required Capability | Notes |
+|----------|----------------------|-------|
+| Orchestrator reasoning | High-quality tool use, multi-step planning, JSON-mode | Provider-agnostic |
+| Spec parsing / structured extraction | Reliable structured output, cost-efficient | Provider-agnostic |
+| PR review summarization | Long context, balanced cost, low hallucination on diff summarisation | Provider-agnostic |
+| Drift analysis | Code/IaC-aware reasoning, structured output | Provider-agnostic |
+
+*A specific model is chosen only when pilot scale + cost data justify it; the choice is recorded in an ADR and the capability map updated.*
 
 ## 3. Prompt Patterns
 - Use **system messages** for invariant instructions (identity, scope, refusal rules).
@@ -93,4 +108,4 @@ Each tool exposed to an agent must declare:
 - Owner is responsible for prompt quality, eval pass-rate, and incident response.
 
 ## 11. Open Questions
-- TBD
+- None. Model choice deferred under the model-provider abstraction rule in §2.1 — see [sprints/SPRINT_PLAN.md §9 Q3](../sprints/SPRINT_PLAN.md#9-open-questions--resolutions).

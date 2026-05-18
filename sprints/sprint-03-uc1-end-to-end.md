@@ -1,17 +1,18 @@
-# Sprint 3 — UC1 End-to-End + WorkIQ + PR
+# Sprint 3 — UC1 End-to-End + Excel + Policy + PR
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0 (introduced WorkIQ in S3) |
 
 > **Window**: 2026-06-22 → 2026-07-03 (2 weeks)
-> **Theme**: Close out **UC1** — ingest specs from SharePoint via WorkIQ, enforce
-> Azure Policy on staging, and open a real PR in ADO with the validation report
-> attached. Marks **end of roadmap Phase 1 (Prototype)**.
+> **Theme**: Close out **UC1** — extend WorkIQ MCP (introduced in [Sprint 2](./sprint-02-uc1-spec-parser-happy-path.md))
+> to cover **Excel specs**, enforce **Azure Policy** on staging, switch the
+> agent to **OBO authentication**, and open a real **PR in ADO** with the
+> validation report attached. Marks **end of roadmap Phase 1 (Prototype)**.
 
 ---
 
@@ -32,19 +33,21 @@
 
 ## 1. Goal & Outcomes
 
-Make UC1 **production-shaped**: the SA invokes the agent with a SharePoint
-link, the agent fetches the spec via WorkIQ, runs the full Sprint-2 pipeline,
-enforces Azure Policy in staging, and opens a PR in ADO with the validation
-report attached as the PR description.
+Make UC1 **production-shaped**: building on the WorkIQ MCP integration from
+Sprint 2, the SA can now point at a spec stored as **Excel** (in addition to
+the JSON shape already supported), the agent runs the full pipeline,
+Azure Policy is enforced in staging, and a real PR is opened in ADO with the
+validation report attached. Identity moves from service-only to **OBO**.
 
 End-of-sprint capability:
 
 ```
-agentic-devops build-subscription "<sharepoint-url-or-fileId>"
+agentic-devops build-subscription "<workiq-url-or-id>"
 ```
 
-→ branch + commits in ADO, PR opened, validation report attached, audit trail
-complete, all under the orchestrator's Entra Agent ID (OBO from the SA).
+→ spec fetched via WorkIQ MCP (JSON **or** Excel), branch + commits in ADO, PR
+opened, validation report attached, audit trail complete, all under the
+agent's Entra Agent ID **acting on behalf of the SA** (OBO).
 
 ---
 
@@ -57,16 +60,16 @@ complete, all under the orchestrator's Entra Agent ID (OBO from the SA).
 ## 3. Scope
 
 ### In Scope
-- WorkIQ MCP integration: fetch spec from SharePoint / OneDrive given a URL or file ID.
-- Spec ingestion supports **JSON, YAML, and Excel (.xlsx)** sources from WorkIQ.
+- WorkIQ MCP **Excel** ingestion: deterministic `.xlsx` → spec JSON mapper.
 - ADO MCP **write** path: create branch, commit files, open PR.
 - PR template auto-populated with validation report + agent trace link.
 - Azure Policy attached to `stg` subscription enforcing tagging + allowed locations.
-- OBO flow: agent acts as the SA when invoked from CLI with the SA's signed-in identity.
+- **OBO flow**: agent acts as the SA when invoked from CLI with the SA's signed-in identity (replaces the service-only identity from Sprint 2).
 - Eval expansion: 6+ golden tasks (incl. Excel spec, SharePoint URL, policy-failing spec).
 - Runbook: how an SA invokes UC1 end-to-end.
 
 ### Out of Scope
+- WorkIQ MCP happy-path JSON ingestion (already delivered in [Sprint 2](./sprint-02-uc1-spec-parser-happy-path.md)).
 - Production subscription deployments (still staging only).
 - Drift detection (Sprint 5).
 - PR Review Agent automation (Sprint 4 — but UC1's PR will be a great test target!).
@@ -75,16 +78,17 @@ complete, all under the orchestrator's Entra Agent ID (OBO from the SA).
 
 ## 4. User Stories & Acceptance Criteria
 
-### S3-1 — WorkIQ spec ingestion
+### S3-1 — WorkIQ MCP: Excel ingestion
 **As an** SA
-**I want** to point the agent at a SharePoint URL and have it fetch the spec
-**so that** I don't need to download files manually.
+**I want** to author the spec as an Excel file in SharePoint and have the agent ingest it
+**so that** non-developer SAs can use a familiar tool.
 
 **Acceptance**:
-- [ ] `tools/workiq_fetch.py` retrieves a file by URL/ID through WorkIQ MCP.
-- [ ] Tool respects user's M365 permissions (OBO) — confirmed by a negative test (file user can't read returns 403, not data).
-- [ ] Supports `.json`, `.yaml`, `.xlsx`. Excel converted to spec JSON via a deterministic mapper.
+- [ ] `tools/excel_to_spec.py` deterministically maps `.xlsx` cells to the spec JSON schema from Sprint 2 (`schemas/landing-zone-spec.schema.json`).
+- [ ] Unmappable cells / missing required cells produce a path-pointing error referencing the sheet + cell.
+- [ ] Tool respects the same `read` side-effect class as the JSON happy path.
 - [ ] No file content is logged; only metadata + hash.
+- [ ] *Implements*: `FR-UC1-002`, `FR-UC1-011`.
 
 ### S3-2 — ADO branch / commit / PR (write path)
 **As an** agent
@@ -135,22 +139,22 @@ complete, all under the orchestrator's Entra Agent ID (OBO from the SA).
 
 | Artifact | Path |
 |----------|------|
-| WorkIQ tool | `tools/workiq_fetch.py`, `tools/excel_to_spec.py` |
+| Excel mapper | `tools/excel_to_spec.py` |
 | ADO write tools | `tools/ado_branch.py`, `tools/ado_commit.py`, `tools/ado_pr_open.py` |
 | PR template | `.azuredevops/pull_request_template.md` |
 | Policy initiative | `infra/policy/landing-zone-baseline.bicep` |
 | OBO auth | `agents/auth/obo.py` |
 | Evals | `evals/tasks/uc1/*.yaml` (expanded) |
 | Runbook | `docs/runbooks/uc1-build-subscription.md` |
-| ADR | `docs/adr/0006-obo-vs-service-identity.md` |
+| ADR | `docs/adr/0007-obo-vs-service-identity.md` |
 
 ---
 
 ## 6. Dependencies
 
-- WorkIQ MCP endpoint available in the dev tenant with the SA's M365 access.
+- [Sprint 2](./sprint-02-uc1-spec-parser-happy-path.md) complete and stable — WorkIQ MCP happy path proven; this sprint builds directly on it.
 - ADO project permissions for the orchestrator's service identity (commit, PR create) — escalation from Sprint 2's read-only scopes.
-- Sprint 2 complete and stable (this sprint builds directly on it).
+- M365 / Entra tenant where OBO can be exercised with the SA's account.
 
 ---
 
@@ -158,10 +162,10 @@ complete, all under the orchestrator's Entra Agent ID (OBO from the SA).
 
 | Risk | Mitigation |
 |------|------------|
-| WorkIQ permission edge cases | Negative-path test in evals; explicit error surface in CLI. |
 | Excel-to-spec mapping ambiguity | Strict mapping rules documented; reject unmappable cells with a clear error. |
-| OBO token scopes mismatch | Validate scopes in Sprint 0/1 with a no-op call; document required Graph scopes in ADR-0006. |
+| OBO token scopes mismatch | Validate scopes with a no-op call early in the sprint; document required Graph scopes in ADR-0007. |
 | Azure Policy denials block legitimate specs | Provide a documented exemption path (manual subscription-level exception) for policy edge cases. |
+| WorkIQ permission edge cases (newly exposed through OBO) | Negative-path test in evals; explicit error surface in CLI. |
 
 ---
 

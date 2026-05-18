@@ -168,7 +168,7 @@ sequenceDiagram
 
 ## 6. Dependencies
 
-- Sprint 3 complete (WorkIQ spec ingestion, UC1 deployment flow).
+- Sprint 3 complete (WorkIQ MCP Excel ingestion, OBO, full UC1 deployment flow; WorkIQ MCP itself was introduced in [Sprint 2](./sprint-02-uc1-spec-parser-happy-path.md)).
 - Sprint 4 complete (UC3 will review any drift-driven PRs).
 - A tracked subscription with a known canonical spec (use the staging subscription from Sprint 2/3 demos).
 

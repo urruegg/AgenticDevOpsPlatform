@@ -1,17 +1,20 @@
-# Sprint 6 — Productionize & Pilot Onboarding
+# Sprint 6 — Productionize & Pilot Demo
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0 (pilot BU onboarding) |
 
 > **Window**: 2026-08-03 → 2026-08-14 (2 weeks)
-> **Theme**: Harden the platform for **pilot** use: centralized agent registry,
-> Conditional Access, Agent 365 telemetry, SLOs, continuous evaluation, and
-> first business-unit onboarding. Marks **end of roadmap Phase 2 (Pilot)**.
+> **Theme**: Harden the platform for **pilot demonstration**: centralized
+> agent registry, Conditional Access, Agent 365 telemetry, SLOs, continuous
+> evaluation, and a **PRD-driven pilot demo** exercising UC1/UC2/UC3 end to
+> end. Per [SPRINT_PLAN.md §9 Q4](./SPRINT_PLAN.md#9-open-questions--resolutions),
+> pilot work focuses on the **shared use cases in the [PRD](../docs/PRD.md)**,
+> not a single business unit. Marks **end of roadmap Phase 2 (Pilot)**.
 
 ---
 
@@ -33,8 +36,8 @@
 ## 1. Goal & Outcomes
 
 All three use cases are functional after Sprint 5, but they need production-grade
-governance, observability, and a documented onboarding path before a real
-business unit can adopt them.
+governance, observability, and a **rehearsed pilot demonstration** before
+real customers adopt them.
 
 By the end of the sprint:
 
@@ -45,8 +48,10 @@ By the end of the sprint:
 - **Continuous evaluation** runs nightly on a curated golden-set and trends in
   Application Insights.
 - **SLOs + runbooks** published for every agent.
-- **One pilot BU** is onboarded with their own subscription registry entries,
-  spec library, and ADO project access.
+- A **PRD-driven pilot demo** exercises the three shared use cases
+  ([UC1](../docs/PRD.md#41-uc1--initial-azure-subscription-build), [UC2](../docs/PRD.md#42-uc2--ongoing-drift-detection),
+  [UC3](../docs/PRD.md#43-uc3--pull-request-reviews)) end-to-end against a
+  representative reference workload — not a specific BU's production stack.
 
 ---
 
@@ -65,12 +70,13 @@ By the end of the sprint:
 - Continuous evaluation job: nightly run of full golden-set across all three agents; trending metric `agent.eval.passRate`.
 - SLOs: per-agent availability + latency targets documented in `docs/slo/`.
 - Runbooks: incident response, model rollback, prompt rollback, agent disablement.
-- Pilot BU onboarding: pilot tenant spec, ADO project link, subscription registry seed entries.
+- **PRD-driven pilot demo**: a curated reference workload + scripted scenarios that exercise UC1, UC2, and UC3 end-to-end. Replaces BU-specific onboarding per [SPRINT_PLAN.md §9 Q4](./SPRINT_PLAN.md#9-open-questions--resolutions).
 - `prod` environment: Bicep deployment via `deploy-prod.yml` with manual approval gate.
 - Private endpoints for Key Vault and Cosmos in `prod`.
 
 ### Out of Scope
 - Multi-BU scale-out (Phase 4 — future).
+- BU-specific onboarding artefacts (subscription registry seed, ADO project linking, spec library) — generalised into the PRD-driven demo; per-BU instances are a Phase 4 activity.
 - Self-service agent onboarding (Phase 4).
 - Auto-remediation of incidents (kept manual for pilot).
 
@@ -123,11 +129,22 @@ By the end of the sprint:
 - [ ] Private endpoints for Key Vault + Cosmos in `prod`.
 - [ ] Diagnostic settings → Log Analytics enabled on every prod resource.
 
-### S6-7 — Pilot BU onboarding
+### S6-7 — PRD-driven pilot demo
+**As a** pilot demo coordinator
+**I want** a rehearsed end-to-end demonstration of UC1/UC2/UC3 against a representative reference workload
+**so that** prospective adopters can evaluate the platform without committing a production stack first.
+
+**Decision context**: per [SPRINT_PLAN.md §9 Q4](./SPRINT_PLAN.md#9-open-questions--resolutions),
+we do not onboard a specific BU in this sprint; we instead build a repeatable
+PRD-driven demo.
+
 **Acceptance**:
-- [ ] Onboarding guide `docs/onboarding/pilot-bu.md` documents prerequisites, registry seed, ADO project linking, expected first-week activities.
-- [ ] One BU's subscription(s) added to tracked-subscriptions registry; UC1 spec library curated; UC3 webhook bound to BU's ADO project.
-- [ ] First-week metrics captured: # of UC1 runs, # of UC3 PRs reviewed, # of drift items detected, time saved estimate.
+- [ ] Reference workload defined in `samples/reference-workload/` (a representative landing zone spec + repo layout covering the resource types described in the [PRD](../docs/PRD.md)).
+- [ ] Demo script `docs/demo/pilot-demo.md` walks UC1 (build), UC2 (drift), UC3 (review) end-to-end against the reference workload, with expected outputs and known checkpoints.
+- [ ] Demo runs cleanly twice in a row from a clean staging RG — captured as a recorded dry-run.
+- [ ] Metrics captured during the demo: # of UC1 runs, # of UC3 PRs reviewed, # of drift items detected, end-to-end latency per use case.
+- [ ] Onboarding guide template `docs/onboarding/adopter-template.md` (placeholder, no BU specifics) ready for future Phase 4 adoption.
+- [ ] *Implements*: `FR-UC1-014`, `FR-UC2-010`, `FR-UC3-010`, `NFR-USE-001`, `NFR-USE-002`.
 
 ---
 
@@ -142,15 +159,15 @@ By the end of the sprint:
 | SLOs | `docs/slo/uc1.md`, `docs/slo/uc2.md`, `docs/slo/uc3.md` |
 | Runbooks | `docs/runbooks/incident-*.md` |
 | Prod deploy | `.github/workflows/deploy-prod.yml`, `infra/main.bicep` (prod params) |
-| Onboarding guide | `docs/onboarding/pilot-bu.md` |
-| ADR | `docs/adr/0007-agent-registry-and-lifecycle.md` |
+| Pilot demo | `samples/reference-workload/`, `docs/demo/pilot-demo.md`, `docs/onboarding/adopter-template.md` |
+| ADR | `docs/adr/0008-agent-registry-and-lifecycle.md` |
 
 ---
 
 ## 6. Dependencies
 
 - Sprints 0–5 complete and demonstrated.
-- Pilot BU sponsor identified by Sprint 4 (per [SPRINT_PLAN.md §9](./SPRINT_PLAN.md#9-open-questions)).
+- Reference workload sample agreed (no BU sponsor required per [SPRINT_PLAN.md §9 Q4](./SPRINT_PLAN.md#9-open-questions--resolutions)).
 - Security sign-off scheduled mid-sprint.
 - `prod` subscription provisioned with required quota.
 
@@ -162,7 +179,7 @@ By the end of the sprint:
 |------|------------|
 | Conditional Access misconfig locks out agents | Stage policies in report-only mode first; flip to enforce only after observation window. |
 | Continuous eval cost overruns | Cap nightly run to a fixed token budget; alert on exceedance. |
-| Pilot BU expectations exceed pilot scope | Written success criteria signed off before onboarding; explicit out-of-scope list. |
+| Pilot demo treated as a production rollout | Demo script and `docs/onboarding/adopter-template.md` explicitly mark demo scope; written success criteria gate any later real onboarding. |
 | `prod` private endpoints break CI deploy | Use deployment scripts with self-hosted runner or grant CI's federated identity scoped network exception. |
 
 ---
@@ -172,7 +189,7 @@ By the end of the sprint:
 - [ ] All user stories done.
 - [ ] M7 demo executed.
 - [ ] Security sign-off received.
-- [ ] One pilot BU active with measurable first-week usage.
+- [ ] PRD-driven pilot demo runs end-to-end twice without manual intervention.
 - [ ] **Roadmap Phase 2 exit gate met**: approved by security, compliance, and platform governance; reusable agent templates published.
 
 ---
@@ -184,7 +201,7 @@ By the end of the sprint:
 3. Trigger nightly eval manually → green; show Teams summary message.
 4. Show Conditional Access policies + a denied sign-in from a non-allowlisted IP in the audit log.
 5. Walk through one of the runbooks (e.g., "Prompt regression → rollback") end-to-end.
-6. Run a pilot-BU UC1 build using the BU's own subscription; UC3 reviews the PR; record metrics in the onboarding tracker.
+6. Run the PRD-driven pilot demo against `samples/reference-workload/`: UC1 builds the landing zone, UC3 reviews the PR, UC2 detects an injected drift the next night. Record metrics in the demo tracker.
 7. Show `deploy-prod.yml` with the manual approval gate and prod resource health.
 
 ---

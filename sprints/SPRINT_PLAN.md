@@ -58,13 +58,13 @@ The plan follows four principles:
 
 | Sprint | Why now? |
 |--------|----------|
-| **0 — Foundation** | Repo, IaC scaffold, Entra app registrations, OIDC, Key Vault, Cosmos DB, Log Analytics, App Insights, GitHub Actions skeleton, ADR system. Every later sprint depends on this — it must come first. |
-| **1 — Orchestrator MVP** | Agent framework, tool-contract schema, tracing, and eval harness scaffolding are reused by every specialized agent. Building them once avoids three parallel forks. |
-| **2 — UC1 Happy Path** | UC1 has the most moving parts (spec → Bicep → pipeline → validation). Splitting it across two sprints (2 and 3) reduces risk and gives a working demo in 4 weeks. JSON spec defers WorkIQ complexity. |
-| **3 — UC1 End-to-End** | Adds WorkIQ (SharePoint spec), Azure Policy, ADO PR opening, and full eval harness for UC1. Closes Phase 1 (Prototype) — UC1 is feature-complete. |
+| **0 — Foundation** | Repo skeleton, **GitHub Copilot coding-agent setup** (instructions, PR template, AGENTS.md, MCP config, issue → branch flow), ADR system. Subscription-independent per [§9 Q1](#9-open-questions--resolutions) — no Azure resources provisioned yet. |
+| **1 — Orchestrator MVP** | Agent framework, tool-contract schema, tracing, and eval harness scaffolding are reused by every specialized agent. Persistence stays behind an interface (in-memory / local) until a hosting subscription is chosen. |
+| **2 — UC1 Happy Path** | First vertical slice of UC1. Per [§9 Q2](#9-open-questions--resolutions) the spec is read through **WorkIQ MCP from day one** — no JSON-first detour. Sprint focuses on the GitHub-Copilot-Agent ↔ WorkIQ MCP integration pattern, Bicep parameter generation, and a staging deployment trigger. |
+| **3 — UC1 End-to-End** | Adds Azure Policy enforcement on staging, ADO PR opening (write path), OBO authentication, and full eval harness for UC1. Closes Phase 1 (Prototype) — UC1 is feature-complete. |
 | **4 — UC3 PR Review Agent** | UC3 is the simplest of the three (read PR, comment) and benefits *every* future PR — including the PRs UC1 produces. Done before UC2 because the work-item-scope and policy-check patterns it pioneers are reusable in UC2 and any future agent. |
 | **5 — UC2 Drift Analyzer** | UC2 depends on UC1: it diffs the live subscription against the spec that UC1 manages. Doing it after UC1 stabilises and after UC3 is in place means drift-driven PRs also flow through UC3 — full virtuous cycle. |
-| **6 — Productionize & Pilot** | Productionization (registry, Conditional Access, Agent 365, SLOs, continuous eval, runbooks) is a single dedicated sprint so it isn't half-done in each functional sprint. Pilot BU onboarding starts at the end. |
+| **6 — Productionize & Pilot** | Productionization (registry, Conditional Access, Agent 365, SLOs, continuous eval, runbooks) is a single dedicated sprint so it isn't half-done in each functional sprint. Per [§9 Q4](#9-open-questions--resolutions) pilot work demonstrates the platform against the **shared use cases in the [PRD](../docs/PRD.md)**, not a specific BU. |
 
 ---
 
@@ -90,15 +90,15 @@ gantt
 timeline
     title Use-Case Delivery
     section Sprint 0–1 : Platform foundation
-        Identity, IaC, observability, agent framework : No agent yet, but everything later depends on it
+        GitHub Copilot Agent setup, agent framework, traces : Subscription-independent (Q1) - no Azure resources yet
     section Sprint 2–3 : UC1 — Subscription Build
-        Spec Parser & Deployment Agent : Bicep generation, staging deploy, validation, PR open
+        Spec Parser & Deployment Agent : WorkIQ MCP from day one (Q2), Bicep generation, staging deploy, validation, PR open
     section Sprint 4 : UC3 — PR Review
-        PR Review Agent : Summary, policy check, work-item scope check, structured comment
+        PR Review Agent : Summary, policy check, work-item scope check, configurable trigger filter (Q5)
     section Sprint 5 : UC2 — Drift Detection
         Drift Analyzer Agent : Read-only scan, gap report, route to UC1 for remediation
     section Sprint 6 : Productionize & Pilot
-        Agent registry & Conditional Access : Agent 365 telemetry, SLOs, runbooks, BU onboarding
+        Agent registry & Conditional Access : Agent 365 telemetry, SLOs, runbooks, pilot demo against PRD use cases (Q4)
 ```
 
 ---
@@ -137,13 +137,13 @@ available; the plan above keeps them sequential for one-team delivery.
 
 | Milestone | Sprint | Roadmap Phase | Demoable Outcome |
 |-----------|--------|---------------|------------------|
-| **M1** — Platform foundation green | End of S0 | Phase 1 | `azd up` provisions Key Vault, Cosmos DB, App Insights; CI green. |
-| **M2** — Orchestrator + first tool call | End of S1 | Phase 1 | Orchestrator agent receives prompt, calls a stub tool, persists trace. |
-| **M3** — UC1 happy path demo | End of S2 | Phase 1 | JSON spec → Bicep → staging deploy → validation report. |
-| **M4** — UC1 production-ready | End of S3 | Phase 1 ✅ | SharePoint spec → full UC1 cycle → PR opened in ADO with audit trace. |
-| **M5** — UC3 live | End of S4 | Phase 2 | New PR in ADO triggers agent → review comment posted within 60 s. |
+| **M1** — Foundation green | End of S0 | Phase 1 | Repo, Copilot coding-agent config, CI lint/test green; **no Azure resources yet** (per [§9 Q1](#9-open-questions--resolutions)). |
+| **M2** — Orchestrator + first tool call | End of S1 | Phase 1 | Orchestrator agent receives prompt, calls a stub tool, persists trace through a provider-agnostic interface. |
+| **M3** — UC1 happy path demo | End of S2 | Phase 1 | WorkIQ MCP fetches spec → Bicep params generated → staging deploy → validation report. |
+| **M4** — UC1 production-ready | End of S3 | Phase 1 ✅ | WorkIQ spec → full UC1 cycle → PR opened in ADO with audit trace. |
+| **M5** — UC3 live | End of S4 | Phase 2 | New PR in ADO triggers agent → review comment posted within 60 s. Trigger filter configurable per [§9 Q5](#9-open-questions--resolutions). |
 | **M6** — UC2 live | End of S5 | Phase 2 | Nightly drift scan → drift report → routed back through UC1. |
-| **M7** — Pilot kickoff | End of S6 | Phase 2 ✅ | One pilot BU onboarded; agent registry, Conditional Access, SLOs in production. |
+| **M7** — Pilot-ready | End of S6 | Phase 2 ✅ | Platform demonstrated end-to-end against PRD use cases (UC1/UC2/UC3); agent registry, Conditional Access, SLOs in production. |
 
 ---
 
@@ -154,8 +154,8 @@ available; the plan above keeps them sequential for one-team delivery.
 | **Platform engineer** | IaC, OIDC, identity, observability, agent framework plumbing (lead S0, S1, S6). |
 | **Agent engineer** | Agent logic, prompts, tool implementations, evals (lead S2–S5). |
 | **Security/identity reviewer** | Reviews Entra Agent ID design, Conditional Access, RBAC scopes (consulted S0, S6; signs off S6). |
-| **Solution architect (user)** | Owns spec format, approves UC1 deployments, reviews UC3 outputs (consulted every sprint; user-tests S3+). |
-| **Pilot BU sponsor** | Provides workload + sandbox subscription for Sprint 6 onboarding. |
+| **Solution architect (user)** | Owns spec authoring in WorkIQ, approves UC1 deployments, reviews UC3 outputs (consulted every sprint; user-tests S3+). |
+| **Pilot demo coordinator** | Curates the PRD-driven pilot scenarios used in Sprint 6 (per [§9 Q4](#9-open-questions--resolutions)). |
 
 Minimum viable team: 1 platform engineer + 1 agent engineer + part-time security review.
 
@@ -185,7 +185,8 @@ the platform's success is measured by:
 | Entra Agent ID feature gaps in pilot tenant | High | Validate in S0; have OBO + SP fallback patterns documented. | S0, S6 |
 | Staging subscription quota or policy blocks demo | Medium | Reserve quota early; coordinate with Azure subscription owner before S2. | S2 |
 | Eval harness too noisy → blocks merges | Medium | Start with smoke evals only in S1; ramp coverage in S3+ when patterns are stable. | S1, S3 |
-| Pilot BU not ready by S6 | Medium | Identify BU sponsor in S0; ensure success criteria are agreed by S4. | S0, S6 |
+| Hosting subscription chosen late (per [§9 Q1](#9-open-questions--resolutions)) | Medium | Keep persistence behind an interface; ship a local/in-memory backend until the hosting subscription is selected, then add a Cosmos backend without changing call sites. | S1, S6 |
+| Model abstraction leaks vendor specifics (per [§9 Q3](#9-open-questions--resolutions)) | Medium | Define a provider interface in S1; write evals against capabilities, not model names; review on every model swap. | S1+ |
 
 ---
 

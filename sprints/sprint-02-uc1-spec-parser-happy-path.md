@@ -1,16 +1,18 @@
-# Sprint 2 — UC1 Spec Parser & Deployment Agent (Happy Path)
+# Sprint 2 — UC1 Spec Parser & Deployment Agent (WorkIQ MCP Happy Path)
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0 (JSON-spec happy path) |
 
 > **Window**: 2026-06-08 → 2026-06-19 (2 weeks)
-> **Theme**: First vertical slice of **UC1** — JSON spec ⇒ Bicep parameters ⇒
-> staging deployment ⇒ validation report. ADO MCP read-only first; PR opening
+> **Theme**: First vertical slice of **UC1** — the GitHub Copilot Agent connects
+> to **WorkIQ MCP from day one** (per [SPRINT_PLAN.md §9 Q2](./SPRINT_PLAN.md#9-open-questions--resolutions)),
+> fetches the spec, generates Bicep parameter files, triggers a staging
+> deployment, and produces a validation report. ADO MCP read-only; PR opening
 > deferred to Sprint 3.
 
 ---
@@ -32,24 +34,32 @@
 
 ## 1. Goal & Outcomes
 
-Prove the **happy path** of UC1: an SA hands the agent a JSON spec, the agent
+Prove the **happy path** of UC1 with the production spec source from day one:
+an SA points the GitHub Copilot Agent at a WorkIQ-managed spec (SharePoint URL
+or WorkIQ file ID), the agent fetches it via the **WorkIQ MCP server**,
 generates Bicep parameter files, triggers a staging deployment, and produces a
 validation summary comparing the deployed state against the spec.
 
 End-of-sprint capability:
 
 ```
-agentic-devops build-subscription ./samples/landing-zone-spec.json
+agentic-devops build-subscription "<workiq-file-id-or-sharepoint-url>"
 ```
 
-→ branch + commits created locally, staging deployed in `rg-agentic-devops-stg-<short-id>`,
-validation report printed and persisted, trace in Cosmos DB.
+→ spec fetched through WorkIQ MCP, branch + commits created locally, staging
+deployed in `rg-agentic-devops-stg-<short-id>`, validation report printed and
+persisted, trace recorded through the provider-agnostic trace interface from
+Sprint 1.
+
+> **Note** (per [SPRINT_PLAN.md §9 Q1](./SPRINT_PLAN.md#9-open-questions--resolutions)):
+> persistence still goes through the in-memory / local backend until a hosting
+> subscription is chosen — the trace API does not change.
 
 ---
 
 ## 2. Use Cases Addressed
 
-- **UC1 — Initial Azure Subscription Build** (happy path)
+- **UC1 — Initial Azure Subscription Build** (WorkIQ MCP happy path)
 
 ```mermaid
 sequenceDiagram
@@ -57,12 +67,15 @@ sequenceDiagram
     actor SA
     participant CLI as agentic-devops CLI
     participant Spec as Spec Parser & Deployment Agent
+    participant WIQ as WorkIQ MCP
     participant ADO as Azure DevOps (read-only)
     participant Pipe as ADO Pipeline
     participant Stg as Staging Subscription
 
-    SA->>CLI: build-subscription spec.json
+    SA->>CLI: build-subscription workiq-file-id
     CLI->>Spec: invoke
+    Spec->>WIQ: fetch spec (tool call)
+    WIQ-->>Spec: spec content + metadata
     Spec->>Spec: validate spec schema
     Spec->>Spec: generate Bicep params
     Spec->>ADO: read repo layout
@@ -79,41 +92,56 @@ sequenceDiagram
 ## 3. Scope
 
 ### In Scope
-- JSON spec schema (`schemas/landing-zone-spec.schema.json`): network ranges, resource list, tags, naming.
-- Spec validator tool (`tools/spec_validator.py`).
+- **WorkIQ MCP integration (primary spec source)**: connect the GitHub Copilot Agent to the WorkIQ MCP server; happy-path read of a single spec by ID/URL.
+- Spec contract: documented JSON shape returned by WorkIQ MCP (`schemas/landing-zone-spec.schema.json`). The schema describes the **expected output** of the WorkIQ tool, not a Git-stored format.
+- Spec validator tool (`tools/spec_validator.py`) applied to WorkIQ MCP responses.
 - Bicep parameter generator (`tools/bicep_param_gen.py`) — Jinja2 templates → `.bicepparam`.
 - ADO MCP integration (**read-only**): list repos, read files.
 - ADO pipeline trigger tool (`tools/ado_pipeline_run.py`) calling existing IaC pipeline (or a stub pipeline shipped with this sprint).
 - Validation tool (`tools/azure_state_diff.py`) — reads RG resources via Azure SDK and diffs against spec.
 - Spec Parser & Deployment Agent (`agents/spec_parser/`) using Sprint 1's runtime.
-- Sample spec + sample target Bicep (`samples/landing-zone-spec.json`, `infra/landing-zone/`).
-- Evals: 3 golden tasks (well-formed spec, missing required field, naming-policy violation).
+- Sample target Bicep (`infra/landing-zone/`); sample WorkIQ spec record used as a fixture for evals.
+- Evals: 3 golden tasks (well-formed WorkIQ spec, missing required field, naming-policy violation).
 
 ### Out of Scope
-- WorkIQ / SharePoint spec ingestion (Sprint 3).
+- Excel-to-spec ingestion via WorkIQ (Sprint 3 — if the WorkIQ tool returns raw Excel, the mapping is deferred).
 - Opening a PR in ADO (Sprint 3).
 - Azure Policy enforcement on staging (Sprint 3).
-- Excel spec ingestion (Sprint 3).
 - Multi-region / multi-subscription specs (later).
+- Local JSON / YAML spec ingestion as a primary path — per [SPRINT_PLAN.md §9 Q2](./SPRINT_PLAN.md#9-open-questions--resolutions), WorkIQ MCP is the spec source. A local file fixture is only used for eval reproducibility.
 
 ---
 
 ## 4. User Stories & Acceptance Criteria
 
-### S2-1 — Spec schema + validator
+### S2-1 — WorkIQ MCP spec ingestion (happy path)
 **As an** SA
-**I want** a strict spec schema with clear validation errors
-**so that** I can author specs confidently.
+**I want** the agent to fetch the spec through the **WorkIQ MCP server** by URL/ID
+**so that** the production spec source is the agent's input from day one.
 
 **Acceptance**:
-- [ ] JSON Schema for landing-zone spec checked into `schemas/`.
+- [ ] `tools/workiq_mcp.py` declares the WorkIQ MCP tool contract (name, input schema `{id|url}`, output schema, side effect = `read`, required permissions).
+- [ ] Agent successfully fetches a sample spec from WorkIQ given a URL/ID.
+- [ ] Authentication uses the GitHub Copilot Agent's identity (service identity in this sprint; OBO deferred to Sprint 3).
+- [ ] No spec content is logged — only metadata + hash.
+- [ ] Unit + integration tests cover: happy path, missing file (404), insufficient permissions (403), malformed response.
+- [ ] *Implements*: `FR-UC1-001`, `FR-UC1-002`, `FR-PLT-002`.
+
+### S2-2 — Spec schema + validator (applied to WorkIQ response)
+**As an** SA
+**I want** a strict spec schema with clear validation errors
+**so that** I can author specs confidently in WorkIQ.
+
+**Acceptance**:
+- [ ] JSON Schema for the landing-zone spec checked into `schemas/` and used to validate the WorkIQ MCP response.
 - [ ] Validator rejects missing required fields with a path-pointing error (`/network/vnetCidr`).
 - [ ] Validator enforces naming rules (regex per resource type) and required tags.
-- [ ] Unit tests cover 5+ malformed specs.
+- [ ] Unit tests cover 5+ malformed spec fixtures.
+- [ ] *Implements*: `FR-UC1-003`.
 
-### S2-2 — Bicep parameter generation
+### S2-3 — Bicep parameter generation
 **As an** agent
-**I want** to deterministically generate `.bicepparam` files from a spec
+**I want** to deterministically generate `.bicepparam` files from a validated spec
 **so that** the IaC pipeline can deploy without manual editing.
 
 **Acceptance**:
@@ -121,18 +149,20 @@ sequenceDiagram
 - [ ] Generation is deterministic (same spec → byte-identical output).
 - [ ] Output organized as `infra/landing-zone/parameters/<env>.bicepparam`.
 - [ ] Naming + tagging conventions match `.github/copilot-instructions.md` §8.
+- [ ] *Implements*: `FR-UC1-004`, `FR-UC1-005`.
 
-### S2-3 — ADO MCP read-only integration
+### S2-4 — ADO MCP read-only integration
 **As an** agent
 **I want** to read repo structure from ADO via MCP
 **so that** I can place files in the correct repo path.
 
 **Acceptance**:
-- [ ] ADO MCP authenticated via Entra Agent ID.
+- [ ] ADO MCP authenticated via the same service identity used for WorkIQ MCP.
 - [ ] Agent lists repos, reads `README.md` from a target repo.
 - [ ] Tool side-effect class is `read`; no write paths exposed yet.
+- [ ] *Implements*: `FR-UC1-006`, `FR-PLT-002`.
 
-### S2-4 — Staging deployment trigger
+### S2-5 — Staging deployment trigger
 **As an** agent
 **I want** to trigger a staging deployment pipeline and wait for completion
 **so that** validation can run against deployed reality.
@@ -142,8 +172,9 @@ sequenceDiagram
 - [ ] Agent polls until completion (max 30 min, configurable).
 - [ ] Tool side-effect class is `deploy`; requires `confirm=True`.
 - [ ] On success, RG `rg-agentic-devops-stg-<runId>` contains expected resources.
+- [ ] *Implements*: `FR-UC1-007`, `FR-UC1-008`.
 
-### S2-5 — Validation: actual vs spec
+### S2-6 — Validation: actual vs spec
 **As an** SA
 **I want** a structured report of any mismatch between spec and deployed state
 **so that** I can decide to proceed, fix the spec, or fail the run.
@@ -151,13 +182,16 @@ sequenceDiagram
 **Acceptance**:
 - [ ] `azure_state_diff` enumerates resources in the staging RG and compares each to the spec.
 - [ ] Mismatches reported as a structured list: `{path, expected, actual, severity}`.
-- [ ] Report persisted as a Cosmos DB document (`validation-reports` container, partition `/agentRunId`).
+- [ ] Report persisted through the trace interface (in-memory / local backend per [SPRINT_PLAN.md §9 Q1](./SPRINT_PLAN.md#9-open-questions--resolutions)); will move to Cosmos DB when the hosting subscription is chosen.
 - [ ] Agent's final CLI output shows pass/fail + first 10 mismatches.
+- [ ] *Implements*: `FR-UC1-009`, `FR-UC1-010`.
 
-### S2-6 — Evals for UC1 happy path
+### S2-7 — Evals for UC1 happy path
 **Acceptance**:
-- [ ] 3 golden tasks in `evals/tasks/uc1/`: happy path, missing tag, invalid VNET CIDR.
+- [ ] 3 golden tasks in `evals/tasks/uc1/`: happy path (WorkIQ fixture), missing tag, invalid VNET CIDR.
+- [ ] Each eval YAML includes a `requirement:` key listing the FR IDs it verifies.
 - [ ] CI eval pass rate ≥ 95 % (3/3 expected).
+- [ ] *Implements*: `NFR-GOV-006`, `FR-PLT-003`.
 
 ---
 
@@ -167,18 +201,20 @@ sequenceDiagram
 |----------|------|
 | Spec schema | `schemas/landing-zone-spec.schema.json` |
 | Spec Parser Agent | `agents/spec_parser/` |
-| Tools | `tools/spec_validator.py`, `tools/bicep_param_gen.py`, `tools/ado_mcp.py`, `tools/ado_pipeline_run.py`, `tools/azure_state_diff.py` |
-| Sample spec | `samples/landing-zone-spec.json` |
+| Tools | `tools/workiq_mcp.py`, `tools/spec_validator.py`, `tools/bicep_param_gen.py`, `tools/ado_mcp.py`, `tools/ado_pipeline_run.py`, `tools/azure_state_diff.py` |
+| Sample fixture | `evals/fixtures/uc1/workiq-spec-happy-path.json` |
 | Target IaC | `infra/landing-zone/` (Bicep templates + sample pipeline) |
 | Evals | `evals/tasks/uc1/*.yaml` |
+| ADR | `docs/adr/0006-workiq-mcp-as-spec-source.md` |
 
 ---
 
 ## 6. Dependencies
 
 - Sprint 1 runtime, tool framework, tracing.
+- **WorkIQ MCP server reachable** from the agent runtime with a service identity that can read at least one sample spec.
 - ADO organization with a project + repo for landing-zone IaC.
-- Entra Agent ID granted: `Contributor` on `rg-agentic-devops-stg-*`, `Build (read)` + `Build (queue)` on ADO project.
+- A staging subscription with quota for the sample landing zone (this is operational — the platform itself remains subscription-independent, but UC1 obviously needs a *target* subscription to deploy into).
 - Sample landing-zone Bicep templates (either pre-existing or built in this sprint as a thin sample).
 
 ---
@@ -187,6 +223,7 @@ sequenceDiagram
 
 | Risk | Mitigation |
 |------|------------|
+| WorkIQ MCP shape differs from assumptions (per [§9 Q2](./SPRINT_PLAN.md#9-open-questions--resolutions)) | Pin MCP version; capture observed schema as a fixture; isolate behind `tools/workiq_mcp.py` so changes are one-tool refactors. |
 | ADO pipeline doesn't exist yet for landing zone | Ship a thin sample pipeline (`infra/landing-zone/pipelines/deploy.yml`) as part of this sprint. |
 | Staging subscription quota blocks deploy | Pre-validate with `what-if`; reserve quota; use small SKUs in samples. |
 | Spec ambiguity → flaky validation | Keep spec strict (no optional ambiguous fields); document every field in the schema. |

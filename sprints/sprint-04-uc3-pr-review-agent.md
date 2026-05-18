@@ -81,7 +81,7 @@ sequenceDiagram
 - Comment composer producing a Markdown structured comment with sections: Summary, Compliance, Scope vs. Work Item, Risks/Questions.
 - Idempotency: re-running on the same PR updates the existing agent comment rather than spamming.
 - Non-OBO service-agent identity with **comment-only** ADO scopes (no push, no merge).
-- Configurable scope filter (which paths trigger the agent, e.g., `infra/**` only or `**`).
+- Configurable scope filter (which paths trigger the agent, e.g., `infra/**` only or `**`) — shipped as a first-class story (S4-7) per [SPRINT_PLAN.md §9 Q5](./SPRINT_PLAN.md#9-open-questions--resolutions).
 - Evals: 5 golden PR fixtures covering diverse change types.
 
 ### Out of Scope
@@ -150,10 +150,29 @@ sequenceDiagram
 - [ ] p95 end-to-end latency < 60 s measured on a 50-PR test set in `dev`.
 - [ ] Latency tracked as an App Insights metric `pr_review.latency_ms`.
 
-### S4-7 — Evals
+### S4-7 — Configurable trigger filter (path-based)
+**As a** repo maintainer
+**I want** to choose whether the PR Review Agent runs on every PR or only on PRs touching specific paths (e.g., `infra/**`)
+**so that** the agent's scope matches what each pilot team actually wants reviewed.
+
+**Decision context**: per [SPRINT_PLAN.md §9 Q5](./SPRINT_PLAN.md#9-open-questions--resolutions),
+the final default is **discovered with the customer**. Sprint 4 ships both
+modes so the conversation can happen with real data.
+
+**Acceptance**:
+- [ ] Per-repo config file `.agentic-devops/pr-review.yaml` declares `triggerMode: all | paths` and (for `paths`) a list of glob patterns.
+- [ ] When `triggerMode: paths` is active and no file in the PR matches, the agent records a `skipped` trace event and posts no comment.
+- [ ] Default when no config file is present: `triggerMode: all` (current pilot behaviour).
+- [ ] Runbook documents both modes and the decision criteria for choosing between them.
+- [ ] Eval includes a fixture PR that should be skipped under `paths: ['infra/**']` and reviewed under `triggerMode: all`.
+- [ ] *Implements*: `FR-UC3-009`, `NFR-GOV-004`.
+
+### S4-8 — Evals
 **Acceptance**:
 - [ ] 5 fixture PRs covering: clean policy-compliant, missing tag, out-of-scope file, secret in diff (negative — agent should flag, not redact), work-item-less PR.
+- [ ] Each eval YAML includes a `requirement:` key listing the FR IDs it verifies.
 - [ ] Eval pass rate ≥ 95 %.
+- [ ] *Implements*: `NFR-GOV-006`, `FR-PLT-003`.
 
 ---
 
