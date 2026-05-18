@@ -25,7 +25,7 @@
         "issues: write",
         "pull-requests: write"
       ],
-      "_golden_task": "agents/orchestrator/golden-tasks.md (planned, S1)",
+      "_golden_task": "agents/orchestrator/golden-tasks.md",
       "type": "builtin",
       "enabled": true
     },
@@ -39,10 +39,10 @@
         "Reader on subscription (drift-analyzer)",
         "Contributor on target RG (spec-parser, scoped per UC1 output)"
       ],
-      "_golden_task": "agents/spec-parser/golden-tasks.md (planned, S2)",
+      "_golden_task": "agents/spec-parser/golden-tasks.md",
       "type": "remote",
-      "enabled": false,
-      "_enable_in_sprint": "S2 (UC1 happy path)"
+      "enabled": true,
+      "_enabled_in_sprint": "S2 (UC1 happy path)"
     },
     "azure-devops-mcp": {
       "_purpose": "Read PRs; create branches/commits/PRs; post review comments; upsert Wiki pages.",
@@ -53,10 +53,10 @@
         "Repos: Contribute + Pull Request Contribute",
         "Wiki: Contribute (drift-analyzer)"
       ],
-      "_golden_task": "agents/spec-parser/golden-tasks.md (planned, S2)",
+      "_golden_task": "agents/spec-parser/golden-tasks.md",
       "type": "remote",
-      "enabled": false,
-      "_enable_in_sprint": "S2 (UC1 happy path)"
+      "enabled": true,
+      "_enabled_in_sprint": "S2 (UC1 happy path)"
     },
     "workiq-mcp": {
       "_purpose": "Read landing-zone specs (UC1 input).",
@@ -64,10 +64,10 @@
       "_used_by": ["spec-parser"],
       "_side_effect_ceiling": "read",
       "_required_permissions": ["WorkIQ read scope on the configured tenant"],
-      "_golden_task": "agents/spec-parser/golden-tasks.md (planned, S2)",
+      "_golden_task": "agents/spec-parser/golden-tasks.md",
       "type": "remote",
-      "enabled": false,
-      "_enable_in_sprint": "S2 (UC1 happy path)"
+      "enabled": true,
+      "_enabled_in_sprint": "S2 (UC1 happy path)"
     }
   }
 }

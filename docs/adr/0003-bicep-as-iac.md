@@ -1,9 +1,15 @@
 # 0003. Bicep as the IaC language for UC1 output landing-zone templates
 
-- **Status**: Proposed
-- **Date**: 2026-05-18
+- **Status**: Accepted
+- **Date**: 2026-05-25 (Accepted; first Proposed 2026-05-18)
 - **Deciders**: @urruegg
 - **Tags**: `infra`, `iac`, `uc1`
+
+> **Acceptance note (S2)**: Moved from `Proposed` to `Accepted` after Sprint 2
+> shipped the first UC1 output Bicep library at
+> [`infra/landing-zone/`](../../infra/landing-zone/) and the `spec-parser`
+> agent renders deterministic `.bicepparam` files from a validated WorkIQ
+> spec. CI runs `az bicep build` on every PR touching `infra/**`.
 
 ## Context
 

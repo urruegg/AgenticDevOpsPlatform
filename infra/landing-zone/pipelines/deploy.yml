@@ -1,0 +1,92 @@
+# UC1 sample ADO pipeline — landing-zone staging deploy.
+#
+# This pipeline is the *output* artefact UC1 emits into a customer's ADO
+# Repos. The spec-parser agent triggers a run of this pipeline via the
+# `azure-devops-mcp` server's `run-pipeline` tool after the customer's
+# reviewer posts `approved-to-apply` on the agent's draft PR.
+
+trigger: none
+
+pr:
+  paths:
+    include:
+      - infra/landing-zone/**
+
+parameters:
+  - name: environment
+    type: string
+    default: stg
+    values:
+      - dev
+      - test
+      - stg
+  - name: targetSubscriptionId
+    type: string
+
+variables:
+  - name: bicepRoot
+    value: infra/landing-zone
+
+stages:
+  - stage: Validate
+    displayName: Validate Bicep + what-if
+    jobs:
+      - job: validate
+        displayName: Build + what-if
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            displayName: az bicep build
+            inputs:
+              azureSubscription: sc-landing-zone-${{ parameters.environment }}
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az bicep build --file $(bicepRoot)/main.bicep
+
+          - task: AzureCLI@2
+            displayName: az deployment group what-if
+            inputs:
+              azureSubscription: sc-landing-zone-${{ parameters.environment }}
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az account set --subscription "${{ parameters.targetSubscriptionId }}"
+                rg="rg-$(echo $(bicepRoot) | tr '/' '-')-${{ parameters.environment }}"
+                az deployment group what-if \
+                  --resource-group "$rg" \
+                  --template-file $(bicepRoot)/main.bicep \
+                  --parameters $(bicepRoot)/parameters/${{ parameters.environment }}.bicepparam
+
+  - stage: Deploy
+    displayName: Deploy (manual approval gate in ADO env)
+    dependsOn: Validate
+    condition: succeeded()
+    jobs:
+      - deployment: deploy
+        displayName: Deploy landing zone
+        environment: landing-zone-${{ parameters.environment }}
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: AzureCLI@2
+                  displayName: az deployment group create
+                  inputs:
+                    azureSubscription: sc-landing-zone-${{ parameters.environment }}
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      az account set --subscription "${{ parameters.targetSubscriptionId }}"
+                      rg="rg-$(echo $(bicepRoot) | tr '/' '-')-${{ parameters.environment }}"
+                      az deployment group create \
+                        --resource-group "$rg" \
+                        --template-file $(bicepRoot)/main.bicep \
+                        --parameters $(bicepRoot)/parameters/${{ parameters.environment }}.bicepparam

@@ -1,0 +1,40 @@
+{
+  "specVersion": "1.0.0",
+  "metadata": {
+    "workloadName": "contoso-payments",
+    "owner": "platform-team@contoso.example",
+    "costCenter": "CC-PAY-001",
+    "environment": "stg"
+  },
+  "subscription": {
+    "targetSubscriptionId": "00000000-0000-0000-0000-000000000001",
+    "primaryRegion": "westeurope",
+    "resourceGroupName": "rg-contoso-payments-stg"
+  },
+  "network": {
+    "vnetCidr": "10.40.0.0/16",
+    "subnets": [
+      {
+        "name": "snet-app",
+        "cidr": "10.40.1.0/24",
+        "delegations": []
+      },
+      {
+        "name": "snet-data",
+        "cidr": "10.40.2.0/24",
+        "delegations": []
+      },
+      {
+        "name": "snet-pe",
+        "cidr": "10.40.3.0/24",
+        "delegations": []
+      }
+    ]
+  },
+  "tags": {
+    "env": "stg",
+    "owner": "platform-team@contoso.example",
+    "costCenter": "CC-PAY-001",
+    "workload": "contoso-payments"
+  }
+}
