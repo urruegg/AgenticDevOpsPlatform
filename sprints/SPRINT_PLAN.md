@@ -25,7 +25,7 @@
 6. [Resourcing & Roles](#6-resourcing--roles)
 7. [Success Metrics](#7-success-metrics)
 8. [Risks](#8-risks)
-9. [Open Questions](#9-open-questions)
+9. [Open Questions — Resolutions](#9-open-questions--resolutions)
 10. [Related Documents](#10-related-documents)
 
 ---
@@ -189,13 +189,23 @@ the platform's success is measured by:
 
 ---
 
-## 9. Open Questions
+## 9. Open Questions — Resolutions
 
-- [ ] Which Azure subscription will host `dev` / `test` / `prod` Cosmos DB and Key Vault? (Need by S0.)
-- [ ] Spec format: stick with Excel/SharePoint, or move to a YAML/JSON spec in Git? (Decision by end of S2 — ADR.)
-- [ ] LLM model choice (Azure OpenAI deployment, region, capacity)? (Decision by S1 — see [docs/AI.md](../docs/AI.md).)
-- [ ] Which BU pilots? (Decision by S4.)
-- [ ] Does UC3 run on every PR, or only PRs touching `infra/**`? (Decision by S4.)
+> Status as of 2026-05-18. Decisions captured here so the team can move on with
+> Sprint 0. Anything that later requires an architectural commitment must still
+> be promoted to an ADR under [docs/adr/](../docs/adr/).
+
+| # | Question | Decision (2026-05-18) | Implication |
+|---|----------|------------------------|-------------|
+| Q1 | Which Azure subscription will host `dev` / `test` / `prod` Cosmos DB and Key Vault? *(Need by S0.)* | **Defer.** Keep the implementation **subscription-independent** for the first sprint so we can target different deployment targets later. Sprint 0 focuses on the **GitHub Copilot Agent implementation**, not on hosting infrastructure. | Sprint 0 will not provision Cosmos DB / Key Vault yet; any persistence in S0–S1 is local or in-memory behind an interface. Subscription decision is re-opened when the platform actually needs durable state. |
+| Q2 | Spec format: Excel/SharePoint, or YAML/JSON in Git? *(Decision by end of S2 — ADR.)* | **Stay on WorkIQ MCP.** The spec is read through the **WorkIQ MCP server (tools/connector)**; we do not migrate the spec source. Sprint 2 focuses on **how the GitHub Copilot Agent connects to WorkIQ MCP**. | No spec-format migration. UC1 sprints invest in the WorkIQ MCP integration pattern (auth, tool contracts, schema validation, fallback). ADR will document the MCP integration, not a format change. |
+| Q3 | LLM model choice (Azure OpenAI deployment, region, capacity)? *(Decision by S1.)* | **Model-independent.** We do not pick a specific model yet. The agent layer must abstract the model behind a provider interface so we can swap it later. | `docs/AI.md` and the agent framework must keep a model-provider abstraction. Evals are written against capabilities, not a specific model name. Model choice deferred until pilot scale needs are known. |
+| Q4 | Which BU pilots? *(Decision by S4.)* | **No specific BU.** Focus on the **shared use cases described in the [PRD](../docs/PRD.md)** (UC1, UC2, UC3) rather than a single BU's workload. | Pilot work in S6 demonstrates the platform against representative use cases from the PRD; BU-specific onboarding is out of scope for this plan. |
+| Q5 | Does UC3 run on every PR, or only PRs touching `infra/**`? *(Decision by S4.)* | **Discover with the customer later.** Defer the scope filter; design UC3 so the trigger filter is **configurable** (default: every PR; opt-in path-filter via repo config). | Sprint 4 ships UC3 with a configurable trigger filter and documents both modes; final default is set during pilot conversations. |
+
+> All five items above are now considered **decided for planning purposes**.
+> If a decision is reversed or refined, update the row, link to the ADR that
+> supersedes it, and bump the document version.
 
 ---
 
