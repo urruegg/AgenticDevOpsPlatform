@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1.0 |
+| **Version** | 2.0.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (initial release); 1.1.0 added S4-7 configurable trigger filter per SPRINT_PLAN §9 Q5 |
+| **Previous Version** | 1.0.0 (Azure Functions HTTP-trigger webhook, Service Bus enqueue, Python `agents/pr_review/`, `tools/ado_pr_read.py`, `tools/ado_pr_comment.py`, `tools/work_item_fetch.py`, `tools/policy_fetch_workiq.py`, Pydantic models, App Insights latency metric `pr_review.latency_ms`); 1.1.0 added S4-7 configurable trigger filter per SPRINT_PLAN §9 Q5; 2.0.0 reframes the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — the webhook receiver is `.github/workflows/uc3-webhook-receiver.yml` (a `repository_dispatch`-triggered Action that authenticates the ADO Service Hook and files an issue); the agent is `agents/pr-review/AGENT.md` and writes the structured PR comment via Azure DevOps MCP. §3.1 lists per-story reinterpretation; user-story IDs `S4-1..S4-8` are preserved. |
 
 > **Window**: 2026-07-06 → 2026-07-17 (2 weeks)
 > **Theme**: Implement **UC3** — an event-driven PR Review Agent that summarizes
@@ -73,7 +73,27 @@ sequenceDiagram
 
 ## 3. Scope
 
-### In Scope
+### 3.1 Runtime Amendment (per ADR-0002)
+
+Reinterpretation of in-scope items:
+
+| Original (1.1.0) | Sprint 4 v2.0.0 equivalent |
+|------------------|---------------------------|
+| Azure Function (Flex Consumption) HTTP-trigger webhook in `api/pr_webhook/` | `.github/workflows/uc3-webhook-receiver.yml` — a `repository_dispatch`-triggered GitHub Actions workflow that receives the ADO Service Hook payload, validates HMAC + IP allowlist, and files an issue from `.github/ISSUE_TEMPLATE/uc3-pr-review.yml`. |
+| Service Bus enqueue + async agent invocation | Issue creation is the queue. The Copilot coding agent picks up the issue and opens a draft PR-comment via Azure DevOps MCP. |
+| `agents/pr_review/` Python package | `agents/pr-review/AGENT.md` prompt file + `agents/pr-review/golden-tasks.md` fixtures. |
+| `tools/ado_pr_read.py`, `tools/ado_pr_comment.py`, `tools/work_item_fetch.py`, `tools/policy_fetch_workiq.py` | Azure DevOps MCP tools (`mcp_azure_devops_pr_get_diff`, `mcp_azure_devops_pr_add_comment`, `mcp_azure_devops_work_item_get`) + WorkIQ MCP tools. |
+| Pydantic structured-comment model | Markdown comment template at `agents/pr-review/templates/comment.md` (Jinja-style placeholders rendered by the agent's prompt-output contract). Idempotency marker `<!-- agentic-devops:pr-review -->` preserved. |
+| Entra Agent ID `agentic-devops-pr-reviewer-<env>` with ADO scopes | ADO MCP service principal with the same scopes (`Code (Read)`, `PR Threads (R/W)`, `Work Items (Read)`); no push, no merge. Configured in the customer's ADO project. |
+| App Insights metric `pr_review.latency_ms` | Latency measured from the `repository_dispatch` workflow start to the ADO comment timestamp; recorded in the issue body when the agent finishes. Aggregated by a follow-up Action posting weekly averages to a dashboard issue. |
+| `.agentic-devops/pr-review.yaml` config in the customer's repo | Retained — still committed to the *customer's* ADO Repo as a UC1 output asset. Agent reads it via Azure DevOps MCP. |
+| `evals/tasks/uc3/*.yaml` + fixtures `evals/fixtures/prs/*` | `agents/pr-review/golden-tasks.md` (5 fixtures) + `samples/prs/*` for fixture diffs. |
+| `infra/modules/function.bicep`, `infra/modules/servicebus.bicep` | **Dropped** — no Function App, no Service Bus at the platform layer. |
+
+User-story IDs `S4-1..S4-8` preserved. `S4-1` acceptance criteria are
+reinterpreted in terms of the `uc3-webhook-receiver.yml` workflow.
+
+### In Scope (original v1.1.0 text retained for traceability)
 - Event ingestion: ADO Service Hook (PR created/updated) → Azure Function (HTTP trigger).
 - Function authenticates the webhook (shared-secret + IP allowlist) and enqueues a job to the agent.
 - PR Review Agent (`agents/pr_review/`) reads diff, files, linked work item.

@@ -4,11 +4,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0.0 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release); 1.1.0 adds §1.1 implementation-runtime note pinning agents to the **GitHub Copilot coding agent** per [ADR-0002](adr/0002-runtime-is-github-copilot-coding-agent.md). Use-case workflows and governance principles unchanged. |
 
 > **Audience**: Solution architects, platform engineers, security & compliance owners
 > **Scope**: Target architecture for an enterprise-grade Agentic DevOps platform that
@@ -47,6 +47,19 @@ Each use case is implemented with specialized agents and integrates with WorkIQ
 (via CLI or MCP) to inject enterprise context (policies, M365 data) where needed,
 all under enterprise-grade controls for identity, compliance, auditing, and
 human oversight.
+
+### 1.1 Implementation Runtime
+
+Per [ADR-0002](adr/0002-runtime-is-github-copilot-coding-agent.md), every agent
+in this platform is realised as a **GitHub Copilot coding agent** configured by
+assets in this repository (`AGENTS.md`, per-agent prompt files under `agents/`,
+`.github/copilot-instructions.md`, `.github/copilot/mcp.json`, issue / PR
+templates, golden-task fixtures, and the UC1 Bicep template library under
+`infra/`). There is **no bespoke Python service, no Foundry-hosted agent, and
+no platform-runtime Azure infrastructure** in this repo. Agents act on Azure /
+Azure DevOps / Microsoft 365 *targets* via MCP servers; §3 (Solution
+Architecture) and §5 (Use Case Implementations) describe each workflow within
+that runtime.
 
 ---
 

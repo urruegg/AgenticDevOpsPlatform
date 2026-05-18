@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0.1 |
+| **Version** | 2.0.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (initial release); 1.0.1 clarified §6 dependency wording after WorkIQ moved to S2 |
+| **Previous Version** | 1.0.0 (initial release with Python `agents/drift_analyzer/`, `tools/azure_scan.py`, `tools/diff_engine.py`, `tools/ado_wiki_upsert.py`, `tools/teams_notify.py`, Azure Function Timer Trigger, Cosmos `drift-reports` + `tracked-subscriptions` containers, `agentic-devops` CLI subcommands); 1.0.1 clarified §6 dependency wording after WorkIQ moved to S2; 2.0.0 reframes the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — the scheduler is `.github/workflows/uc2-nightly.yml` (cron → issue per tracked subscription); the agent is `agents/drift-analyzer/AGENT.md` calling Azure MCP for read-only scans + WorkIQ MCP for the spec + Azure DevOps MCP for the wiki upsert; the tracked-subscription registry is a Markdown file at `samples/tracked-subscriptions.md` (or per-customer ADO Wiki page) rather than Cosmos. §3.1 lists per-story reinterpretation; user-story IDs `S5-1..S5-7` are preserved. |
 
 > **Window**: 2026-07-20 → 2026-07-31 (2 weeks)
 > **Theme**: Implement **UC2** — scheduled read-only Azure scans that compare
@@ -78,7 +78,28 @@ sequenceDiagram
 
 ## 3. Scope
 
-### In Scope
+### 3.1 Runtime Amendment (per ADR-0002)
+
+Reinterpretation of in-scope items:
+
+| Original (1.0.1) | Sprint 5 v2.0.0 equivalent |
+|------------------|---------------------------|
+| `agents/drift_analyzer/` Python package | `agents/drift-analyzer/AGENT.md` prompt file + `agents/drift-analyzer/golden-tasks.md` fixtures. |
+| `tools/azure_scan.py` | Azure MCP read tools (`mcp_azure_mcp_group_resource_list`, `mcp_azure_mcp_storage_*`, etc.) called by the agent. |
+| `tools/diff_engine.py` (Python diff) | Diff computed by the agent against the spec returned by WorkIQ MCP. Severity rules are encoded in `agents/drift-analyzer/AGENT.md`. Stable ordering enforced by output-contract spec (sorted by `resourcePath` then `property`). |
+| `tools/ado_wiki_upsert.py` | Azure DevOps MCP `wiki-upsert` tool. |
+| `tools/teams_notify.py` | GitHub Actions step posting to Teams via a configured webhook secret. Triggered by the agent posting a `severity:error` label on the issue. |
+| `api/drift_timer/` (Azure Function timer) | `.github/workflows/uc2-nightly.yml` — GitHub Actions cron workflow that opens one issue per tracked subscription using `.github/ISSUE_TEMPLATE/uc2-drift-scan.yml`. |
+| Cosmos container `drift-reports` with `/subscriptionId` partition + TTL 180d | Drift reports are the issue body + a structured comment thread on the drift-scan issue. Long-term archive is the Git history of the customer's ADO Wiki page `/Drift/<subscriptionId>`. |
+| Cosmos container `tracked-subscriptions` partitioned by `/tenantId` | Markdown registry at `samples/tracked-subscriptions.md` (one row per subscription) or, per customer, in their ADO Wiki. CRUD via PRs to that file. |
+| `agentic-devops track-subscription add|list|remove` CLI | Issue from `.github/ISSUE_TEMPLATE/uc2-track-subscription.yml`; the agent updates the Markdown registry. |
+| Read-only Entra Agent ID `agentic-devops-drift-reader-<env>` | Read-only service principal scoped to `Reader` on each tracked subscription, federated to GitHub via WIF. |
+| `evals/tasks/uc2/*.yaml` + fixtures | `agents/drift-analyzer/golden-tasks.md` (4 fixtures: clean, tag-drift, missing-resource, extra-unsanctioned). |
+| `docs/runbooks/uc2-drift.md` | Retained — still Markdown. |
+
+User-story IDs `S5-1..S5-7` preserved.
+
+### In Scope (original v1.0.1 text retained for traceability)
 - Drift Analyzer Agent (`agents/drift_analyzer/`).
 - Read-only Azure scan via `azure-mgmt-resource`, `azure-mgmt-network`, `azure-mgmt-storage`, etc.
 - Diff engine that handles resource-level + property-level comparisons with severity tiers (`info | warn | error`).

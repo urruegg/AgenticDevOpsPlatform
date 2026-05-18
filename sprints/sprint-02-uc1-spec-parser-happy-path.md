@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1.0 |
+| **Version** | 2.0.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (JSON-spec happy path); 1.1.0 re-scoped to WorkIQ MCP per SPRINT_PLAN §9 Q2 |
+| **Previous Version** | 1.0.0 (JSON-spec happy path with Python `agents/spec_parser/`, Pydantic spec validator, Jinja2 Bicep param generator, ADO MCP read-only, `pytest` eval harness, Cosmos persistence); 1.1.0 re-scoped to WorkIQ MCP per SPRINT_PLAN §9 Q2; 2.0.0 reframes the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — there is no Python `tools/` package; the agent is `agents/spec-parser/AGENT.md` calling WorkIQ MCP + ADO MCP + `az` CLI directly; deterministic Bicep generation happens via the Bicep template library in `infra/landing-zone/` with the agent supplying parameters. §3.1 lists per-story reinterpretation; user-story IDs `S2-1..S2-7` are preserved. |
 
 > **Window**: 2026-06-08 → 2026-06-19 (2 weeks)
 > **Theme**: First vertical slice of **UC1** — the GitHub Copilot Agent connects
@@ -91,7 +91,27 @@ sequenceDiagram
 
 ## 3. Scope
 
-### In Scope
+### 3.1 Runtime Amendment (per ADR-0002)
+
+Reinterpretation of in-scope items below:
+
+| Original (1.1.0) | Sprint 2 v2.0.0 equivalent |
+|------------------|---------------------------|
+| `tools/workiq_mcp.py` (Python tool wrapper) | WorkIQ MCP server listed in `.github/copilot/mcp.json`; the agent calls it directly as an MCP tool. |
+| `tools/spec_validator.py` (Pydantic validator) | Spec JSON Schema at `schemas/landing-zone-spec.schema.json`; the agent validates via prompt-driven `jq` / `ajv` MCP call or a tiny inline validator step in the Bicep template. |
+| `tools/bicep_param_gen.py` (Jinja2 generator) | Bicep parameter file generation by the agent calling `az bicep` MCP (or shell) against the template library in `infra/landing-zone/`. Determinism enforced by parameter-file diff against the previous run committed under `agents/spec-parser/golden-tasks.md` fixtures. |
+| `tools/ado_mcp.py` (Python wrapper) | Azure DevOps MCP server listed in `.github/copilot/mcp.json`; the agent calls it directly. |
+| `tools/ado_pipeline_run.py` | ADO MCP `run-pipeline` tool with side-effect ceiling `deploy`; requires `approved-to-apply` comment per [SECURITY.md §7](../docs/SECURITY.md#7-destructive-actions-policy). |
+| `tools/azure_state_diff.py` | Azure MCP read tools (`mcp_azure_mcp_group_resource_list` and friends) + agent-side diff; result posted as a structured Markdown table on the draft PR. |
+| `agents/spec_parser/` Python package | `agents/spec-parser/AGENT.md` prompt file + `agents/spec-parser/golden-tasks.md` fixtures. |
+| `evals/tasks/uc1/*.yaml` (3 golden tasks) | `agents/spec-parser/golden-tasks.md` with 3 fixtures, each with `requirement:` front-matter. |
+| Persistence via the “trace interface” | The validation report is the structured table on the agent's draft PR; the PR body is the persistent artefact. Copilot run history is the trace. |
+| Sprint 1 `agentic-devops build-subscription` CLI | `.github/ISSUE_TEMPLATE/uc1-build-subscription.yml` opens an issue; the Copilot coding agent picks it up and opens a draft PR. |
+| ADR `0006-workiq-mcp-as-spec-source.md` | Retained — still valuable as a record of the WorkIQ MCP choice; does not conflict with ADR-0002. |
+
+User-story IDs `S2-1..S2-7` preserved. Acceptance criteria reinterpreted accordingly; the “FR-* implements” lines on each story remain authoritative.
+
+### In Scope (original v1.1.0 text retained for traceability)
 - **WorkIQ MCP integration (primary spec source)**: connect the GitHub Copilot Agent to the WorkIQ MCP server; happy-path read of a single spec by ID/URL.
 - Spec contract: documented JSON shape returned by WorkIQ MCP (`schemas/landing-zone-spec.schema.json`). The schema describes the **expected output** of the WorkIQ tool, not a Git-stored format.
 - Spec validator tool (`tools/spec_validator.py`) applied to WorkIQ MCP responses.

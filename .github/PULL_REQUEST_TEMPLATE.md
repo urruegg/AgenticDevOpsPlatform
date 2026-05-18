@@ -24,34 +24,33 @@
 ## Validation Evidence
 
 <!-- Commands executed + outcomes. Paste tail of relevant output. -->
-- [ ] `pytest -q`
-- [ ] `ruff check .`
-- [ ] `black --check .`
-- [ ] `az bicep build` / `az deployment group what-if` (if infra changed)
-- [ ] `pytest evals/ -q` (if prompts/tools/agents changed)
+- [ ] `npx --yes markdownlint-cli2 "**/*.md" "#node_modules"` (markdown lint)
+- [ ] `npx --yes markdown-link-check docs/**/*.md sprints/*.md .github/*.md` (link check)
+- [ ] `az bicep build --file infra/main.bicep` / `az deployment group what-if ...` (if `infra/**` changed — UC1 outputs)
+- [ ] Golden-task replay attached (if `agents/**` or `evals/**` or `.github/copilot/mcp.json` changed)
 
 ## Eval Impact
 
-<!-- For prompts, tools, or agent control-flow changes only. -->
+<!-- For prompt, agent-contract, or MCP allow-list changes only. -->
 - Golden tasks affected: …
 - Pass-rate before → after: …
-- Sample run trace link (App Insights): …
+- Replay log link (issue/PR comment or workflow run): …
 
 ## API Impact
 
-<!-- New/changed endpoints, MCP tool contracts, CLI commands. State "none" if none. -->
+<!-- New/changed MCP tool contracts, agent prompts, issue templates, or workflow_dispatch inputs. State "none" if none. -->
 
 ## Infrastructure Impact
 
-<!-- Bicep modules added/changed; `what-if` summary. State "none" if none. -->
+<!-- Bicep modules added/changed under `infra/` (UC1 outputs); `what-if` summary. State "none" if none — the platform itself has no infra (per ADR-0002). -->
 
 ## Security Impact
 
-<!-- New identities, RBAC, secrets, network changes. State "none" if none. -->
+<!-- New MCP servers added to `.github/copilot/mcp.json`, RBAC implied, secrets, network changes for UC1 outputs. State "none" if none. -->
 
 ## Data Impact
 
-<!-- Cosmos DB containers, partition keys, retention, PII. State "none" if none. -->
+<!-- Cosmos DB containers, partition keys, retention, PII — applies only to UC1 outputs that include a customer-side data store; the platform itself stores nothing (per ADR-0002). State "none" if none. -->
 
 ## Documentation Updated
 
@@ -69,9 +68,11 @@
 
 ### Reviewer Checklist (carried from [.github/copilot-instructions.md §7](../.github/copilot-instructions.md#7-code-review-checklist))
 
-- [ ] CI checks pass (lint, test, build, security scan, IaC validate, eval)
-- [ ] Coverage ≥ 80 % on changed files
+- [ ] CI checks pass (markdown lint, link check, Bicep build/validate where applicable, security scan, golden-task replay where applicable)
+- [ ] Where code exists, coverage ≥ 80 % on changed files; otherwise markdown lint + Bicep validate + golden-task replay satisfy the gate (per ADR-0002)
 - [ ] No hard-coded secrets, subscription IDs, tenant IDs, URLs, or resource names
+- [ ] Any new MCP server added to `.github/copilot/mcp.json` has CODEOWNERS approval and documented purpose + required permissions
 - [ ] Commit messages follow Conventional Commits
 - [ ] Requirements section above is complete and references valid PRD IDs
 - [ ] Traceability matrix in `docs/PRD.md` §7 is consistent
+- [ ] Every edited doc has its **Version** header bumped per [`.github/copilot-instructions.md` §9](../.github/copilot-instructions.md#9-document-versioning)

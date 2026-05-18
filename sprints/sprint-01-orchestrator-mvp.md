@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0.0 |
+| **Version** | 2.0.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (Microsoft Agent Framework / Semantic Kernel runtime, Python `agents/orchestrator/`, `tools/base.py`, OpenTelemetry traces to App Insights, Cosmos `agent-runs` container, `agentic-devops` CLI, `pytest` eval harness); 2.0.0 reframes the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md). User-story IDs `S1-1..S1-5` are preserved; §3.1 lists the per-story reinterpretation (e.g., “orchestrator agent shell” → `agents/orchestrator/AGENT.md` prompt file; “tool contract framework” → MCP tool description in `AGENTS.md` + `.github/copilot/mcp.json`; “Cosmos run document” → GitHub-native artefacts; “App Insights traces” → Copilot run history; “smoke eval harness” → first golden-task fixture at `agents/orchestrator/golden-tasks.md`). |
 
 > **Window**: 2026-05-25 → 2026-06-05 (2 weeks)
 > **Theme**: Stand up the agent runtime, tool-contract framework, tracing, and
@@ -55,7 +55,44 @@ By the end of the sprint:
 
 ## 3. Scope
 
-### In Scope
+### 3.1 Runtime Amendment (per ADR-0002)
+
+The runtime is the **GitHub Copilot coding agent**. The original in-scope list
+(below) is reinterpreted as follows:
+
+| Original (1.0.0) | Sprint 1 v2.0.0 equivalent |
+|------------------|---------------------------|
+| `agents/orchestrator/` Python package | `agents/orchestrator/AGENT.md` (system prompt + tools + refusal rules + output contract) |
+| `tools/base.py` `Tool` base class with Pydantic schemas | MCP tool descriptions in `AGENTS.md` + `.github/copilot/mcp.json` allow-list. Each agent declares its allowed MCP tools and side-effect ceiling (`read | write | deploy | delete`). |
+| Two reference tools (`echo_tool`, `cosmos_write_trace`) | One reference tool exercised: GitHub MCP `add-comment` (read/write). No Cosmos write tool. |
+| OpenTelemetry traces → App Insights | GitHub Copilot coding-agent run history + GitHub audit log (see [AI.md §5](../docs/AI.md#5-agent-memory--traces)). |
+| Cosmos DB `agent-runs` container partitioned by `/agentRunId` | Repository itself (issues, PRs, comments, Copilot runs). No Cosmos at the platform layer. |
+| `agentic-devops` CLI | Issue created from `.github/ISSUE_TEMPLATE/smoke-echo.yml` or `@copilot` mention. |
+| `DefaultAzureCredential` / Managed Identity | Copilot coding-agent identity for in-repo work; WIF for any outbound MCP call (Sprint 2+). |
+| `evals/` pytest runner + `evals/tasks/smoke_echo.yaml` | `agents/orchestrator/golden-tasks.md` with a smoke fixture; replay via `eval-goldens.yml` GitHub Actions workflow (optional, manual replay acceptable). |
+| `.github/workflows/eval.yml` | `eval-goldens.yml` (optional). |
+| ADR `0005-agent-framework-choice.md` | **Superseded by ADR-0002**. No framework decision needed; the runtime is fixed. |
+
+User-story IDs `S1-1..S1-5` are preserved; their acceptance criteria are
+reinterpreted in line with the table above. Specifically:
+
+- `S1-1` Orchestrator agent shell → `agents/orchestrator/AGENT.md` exists,
+  declares Identity / Scope / Tools / Refusal Rules / Output Contract, and is
+  picked up by the Copilot coding agent when an issue is filed from the
+  smoke-echo template.
+- `S1-2` Tool contract framework → `AGENTS.md` documents the orchestrator's
+  allowed MCP tools with `side-effect ceiling` and `required permissions`;
+  `.github/copilot/mcp.json` enumerates them; CODEOWNERS gates additions.
+- `S1-3` Tracing & persistence → GitHub Copilot run history + audit log
+  capture every run; no Cosmos.
+- `S1-4` Eval harness smoke test → `agents/orchestrator/golden-tasks.md` has
+  a happy-path fixture; `eval-goldens.yml` (optional) replays it.
+- `S1-5` Dry-run / plan mode → the orchestrator's prompt enforces a
+  "plan-then-apply" pattern; for any tool with side-effect ceiling `write` or
+  higher, the agent must post a plan comment and wait for `approved-to-apply`
+  before firing the tool.
+
+### In Scope (original v1.0.0 text retained for traceability)
 - `agents/orchestrator/` — agent shell, prompt template, planner loop.
 - `tools/base.py` — `Tool` base class with `name`, `description`, `input_schema`,
   `output_schema`, `side_effects`, `required_permissions`, `dry_run()`, `execute()`.

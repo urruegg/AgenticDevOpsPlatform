@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0.0 |
+| **Version** | 1.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | — (initial release) |
+| **Previous Version** | 1.0.0 (initial release); 1.1.0 adds an [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) callout noting that all sprint files have a runtime-amendment overlay reinterpreting Python / Cosmos / App Insights / Azure Functions acceptance criteria for the **GitHub Copilot coding agent runtime**; refines the §5 Definition of Done coverage gate to allow Markdown / Bicep / golden-task replay in place of `≥ 80 %` line coverage while no code is present. |
 
 > **Purpose**: Plan and track the iterative delivery of the Agentic DevOps Platform.
 > Each sprint produces a working, demonstrable increment that proves part of the
@@ -89,11 +89,11 @@ representative of the final platform — not throw-away code.
 A sprint is **Done** when **all** of the following are true:
 
 - [ ] All sprint user stories meet their acceptance criteria.
-- [ ] All CI checks pass on `main` (lint, test, IaC validate, security scan, eval).
-- [ ] Coverage ≥ 80% on changed files (see [docs/TEST.md](../docs/TEST.md)).
-- [ ] Eval results attached to the PR if prompts/tools/agents changed.
-- [ ] Documentation updated where contracts or behavior changed.
-- [ ] Live demo executed against `dev` environment with audit trace captured.
+- [ ] All CI checks pass on `main` (markdown lint, link check, Bicep build/validate for any `infra/**` touched, security scan, optional golden-task replay).
+- [ ] Where source code exists, coverage ≥ 80 % on changed files (see [docs/TEST.md](../docs/TEST.md)). While the repo is Markdown + Bicep + YAML only (per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md)), this gate is satisfied by markdown lint + Bicep validate + golden-task replay.
+- [ ] Golden-task replay results attached to the PR if prompts or MCP allow-list changed.
+- [ ] Documentation updated where contracts or behavior changed; every edited doc is SemVer-bumped per [`.github/copilot-instructions.md` §9](../.github/copilot-instructions.md#9-document-versioning).
+- [ ] Live demo executed; for sprints touching customer-side targets, audit trace captured.
 - [ ] Retro completed, decisions captured as ADRs where applicable.
 
 ---

@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1.0 |
+| **Version** | 2.0.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (pilot BU onboarding); 1.1.0 reframed as PRD-driven pilot demo per SPRINT_PLAN §9 Q4 |
+| **Previous Version** | 1.0.0 (pilot BU onboarding); 1.1.0 reframed as PRD-driven pilot demo per SPRINT_PLAN §9 Q4 — still assumed Cosmos `agent-registry` container, Conditional Access on Entra Agent IDs, Agent 365 telemetry, `.github/workflows/eval-nightly.yml`, `prod` environment with private endpoints and `deploy-prod.yml`; 2.0.0 reframes the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — the Agent Registry is the top-level `AGENTS.md` + `.github/copilot/mcp.json` + GitHub team configuration; there is no platform `prod` environment to deploy (the platform has none, per ADR-0002); Conditional Access applies to the MCP-side service principals used by Azure / ADO MCP servers, not to platform identities. The PRD-driven pilot demo retains its acceptance criteria. §3.1 lists per-story reinterpretation; user-story IDs `S6-1..S6-7` are preserved. |
 
 > **Window**: 2026-08-03 → 2026-08-14 (2 weeks)
 > **Theme**: Harden the platform for **pilot demonstration**: centralized
@@ -63,7 +63,31 @@ By the end of the sprint:
 
 ## 3. Scope
 
-### In Scope
+### 3.1 Runtime Amendment (per ADR-0002)
+
+Reinterpretation of in-scope items:
+
+| Original (1.1.0) | Sprint 6 v2.0.0 equivalent |
+|------------------|---------------------------|
+| Cosmos container `agent-registry` partitioned by `/tenantId` with schema `{agentId, name, owner, entraObjectId, scopes[], modelDeployment, promptHash, evalBaseline, status, createdAt, lastReviewedAt}` | Top-level `AGENTS.md` (Markdown table) + `.github/copilot/mcp.json` + GitHub team configuration. Each row holds: agent name, owner, trigger(s), MCP servers in use, side-effect ceiling, golden-task path, status (`active | paused | retired`), last-reviewed date. `promptHash` is the Git commit SHA of `agents/<name>/AGENT.md`. |
+| `agentic-devops registry list|get|pause|retire` CLI | PRs to `AGENTS.md` (status column); a `pause` is reflected by removing the agent's MCP servers from `.github/copilot/mcp.json` for the affected agent. |
+| Conditional Access on Entra Agent IDs | Conditional Access applies to MCP-side service principals (Azure, ADO) and to GitHub org SSO for human callers. The Copilot coding-agent identity itself is governed by GitHub. |
+| `agent.run.start` / `agent.run.end` / `agent.tool.call` App Insights custom events | GitHub Copilot run history + GitHub audit log + Git history of `agents/**`. Weekly aggregation reported by a GitHub Actions workflow posting summary issue. |
+| App Insights workbook `infra/monitor/workbook-agent-365.json` | **Dropped from Sprint 6**; replaced by the GitHub-native aggregation workflow above. May be reintroduced later as a UC1 *output* artefact for customer landing zones, but not at the platform layer. |
+| `.github/workflows/eval-nightly.yml` | Retained, with eval-set rooted at `agents/<name>/golden-tasks.md`. |
+| `prod` environment + `.github/workflows/deploy-prod.yml` + private endpoints for KV/Cosmos | **Dropped** — the platform has no `prod` environment. The customer's landing zones (UC1 outputs) have their own `prod` environments deployed by the customer's pipeline. |
+| ADR `0008-agent-registry-and-lifecycle.md` | Retained — reframed as ADR documenting the `AGENTS.md`-driven registry and how pause/retire works without Cosmos. |
+| Pilot-demo deliverables (`samples/reference-workload/`, `docs/demo/pilot-demo.md`, `docs/onboarding/adopter-template.md`) | Retained unchanged. |
+| Runbooks `docs/runbooks/incident-*.md` and SLOs `docs/slo/uc*.md` | Retained; runbooks include the GitHub-native "disable agent" step (PR to `AGENTS.md` + MCP allow-list). |
+
+User-story IDs `S6-1..S6-7` preserved. `S6-1` is reinterpreted as
+`AGENTS.md`-driven registry; `S6-2` as Conditional Access on MCP-side
+identities; `S6-3` as GitHub-native telemetry aggregation; `S6-6` ("`prod`
+environment + manual gate") is **out of scope** — there is no platform prod.
+A Sprint 6 deliverable note states this explicitly so reviewers see the
+drop.
+
+### In Scope (original v1.1.0 text retained for traceability)
 - Agent Registry (Cosmos `agent-registry`): per-agent record with owner, scopes, model, prompt hash, eval baseline, lifecycle status.
 - Conditional Access: per-agent-identity policies (location, device, sign-in risk).
 - Agent 365 telemetry shipping: `agent.run.start`, `agent.run.end`, `agent.tool.call` custom events; central dashboard.

@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.2.0 |
+| **Version** | 1.3.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (initial release; 1.1.0 added §7 traceability matrix; 1.2.0 added `FR-PLT-007`) |
+| **Previous Version** | 1.0.0 (initial release); 1.1.0 added §7 traceability matrix; 1.2.0 added `FR-PLT-007`; 1.3.0 adds §1.3 implementation-runtime note pinning the platform to the **GitHub Copilot coding agent runtime** per [ADR-0002](adr/0002-runtime-is-github-copilot-coding-agent.md), runtime-amendment overlays at the head of §§4–5 that re-interpret specific FR/NFR rows (all FR/NFR IDs preserved), refreshes §7 verification paths from `evals/tasks/uc*.yaml` to `agents/<name>/golden-tasks.md#<fixture>`, and adds a golden-task front-matter `requirement:` key to §8. |
 
 > **Purpose**: Capture the **what** of the Agentic DevOps Platform — personas,
 > user journeys, functional requirements, and non-functional requirements —
@@ -49,6 +49,25 @@
 - Replacing human approvers — agents augment, never decide.
 - Self-service onboarding beyond pilot (future phase).
 - Real-time chat UX — orchestration is CLI/event-driven for v1.
+
+### 1.3 Implementation Runtime (per ADR-0002)
+
+Every agent in this platform is realised as a **GitHub Copilot coding agent**
+configured by assets in this repository (`AGENTS.md`, per-agent prompt files
+under `agents/`, `.github/copilot-instructions.md`, `.github/copilot/mcp.json`,
+issue and PR templates, golden-task fixtures, and the UC1 Bicep template
+library under `infra/`) per
+[ADR-0002](adr/0002-runtime-is-github-copilot-coding-agent.md). There is **no
+bespoke Python service, no Foundry-hosted agent, and no platform-runtime Azure
+infrastructure** in this repo. Agents act on Azure / Azure DevOps / Microsoft
+365 *targets* via MCP servers.
+
+The FR/NFR catalogue in §§4–5 keeps every identifier stable; the **runtime-
+amendment overlays** at the head of §4 and §5 re-interpret specific rows in
+light of the runtime decision (e.g., "persist to Cosmos DB" becomes "persist
+to the store of record — GitHub-native artefacts by default") without renaming
+or renumbering any ID. No `FR-*` / `NFR-*` IDs are removed or renumbered in
+this version.
 
 ---
 
@@ -163,6 +182,37 @@ journey
 > Each FR has a stable ID. Acceptance evidence comes from the sprint user
 > story listed in the [Traceability Matrix](#7-traceability-matrix).
 
+### 4.0 Runtime Amendment (per ADR-0002)
+
+Applies to every FR in §4. IDs and intent are unchanged; only the reference
+implementation is clarified:
+
+- Wherever an FR refers to "Cosmos DB" as the platform store of record
+  (`FR-UC1-008`, `FR-UC2-006`, `FR-PLT-005`), read it as "the store of record"
+  — by default the repository itself (issues, PRs, comments, branches, audit
+  log, Copilot run history) and, for UC2 specifically, the ADO Wiki page in
+  `FR-UC2-007`. Cosmos DB may still appear inside a UC1 *output* landing zone
+  for the customer's workload (see [INFRASTRUCTURE.md](INFRASTRUCTURE.md) §3);
+  that is not the platform's store.
+- Wherever an FR refers to "OpenTelemetry traces to Application Insights"
+  (`FR-PLT-004`), the reference implementation is the GitHub Copilot coding-
+  agent run history plus the GitHub audit log plus Git history of `agents/**`
+  and `.github/copilot/**`. A future opt-in export to a customer-owned Log
+  Analytics workspace may be layered on without changing this FR.
+- Wherever an FR refers to a generic "agent" command-line entry point
+  (`FR-PLT-009`, `FR-UC1-013`), the entry point is a GitHub issue created
+  from a template under `.github/ISSUE_TEMPLATE/`, an `@copilot` mention, or
+  a `workflow_dispatch`. The `agentic-devops` CLI is **not** present in this
+  repo today; if a future use case introduces it, it is layered on top.
+- Wherever an FR refers to evals at `evals/tasks/uc*.yaml`
+  (`FR-PLT-006`, `FR-UC1-*` verification paths in §7), the canonical path
+  is `agents/<name>/golden-tasks.md` (or `evals/<name>/*.md`) — see
+  [§8](#8-implementation-time-traceability) for the front-matter convention.
+- Wherever an FR refers to the "Agent Registry" (`FR-PLT-007`, `FR-PLT-008`),
+  the registry is `AGENTS.md` (root) + `.github/copilot/mcp.json` + GitHub
+  team configuration. "Pause/retire" is performed by editing `AGENTS.md`
+  (status field) and/or revoking MCP allow-list entries.
+
 ### 4.1 UC1 — Subscription Build (FR-UC1-*)
 
 | ID | Requirement | Priority |
@@ -230,6 +280,37 @@ journey
 ---
 
 ## 5. Non-Functional Requirements
+
+### 5.0 Runtime Amendment (per ADR-0002)
+
+Applies to every NFR in §5. IDs unchanged; clarifications below:
+
+- `NFR-SEC-001` ("Entra Agent IDs"): inside this repo, the runtime identity
+  is the GitHub Copilot coding-agent identity; Entra Agent ID re-enters scope
+  for any UC1 output that provisions agentic workloads in the customer's
+  tenant, and for any future non-Copilot code in this repo. See
+  [SECURITY.md §2](SECURITY.md#2-identity--access).
+- `NFR-SEC-003` ("Key Vault via Managed Identity"): broaden to "GitHub Actions
+  secrets via OIDC; Azure Key Vault via Managed Identity inside UC1 outputs.
+  No long-lived secrets in code, config, prompts, or PR descriptions."
+- `NFR-SEC-004` / `NFR-SEC-008` and `NFR-SCL-001` / `NFR-SCL-002` /
+  `NFR-DAT-001` / `NFR-DAT-002` / `NFR-DAT-003` / `NFR-DAT-004`: apply to
+  UC1-deployed landing zones (the customer's infra). They are not requirements
+  on the platform itself, which has no Azure runtime to harden.
+- `NFR-PERF-003` ("continuous-eval token cap"): scoped to the optional
+  `eval-goldens.yml` workflow; if the workflow is not enabled, this NFR is
+  vacuously satisfied.
+- `NFR-OBS-001` / `NFR-OBS-002` / `NFR-OBS-004`: the "central workbook" and
+  "custom event" obligations are reference implementations to be re-layered
+  if and when telemetry export is introduced (see §4.0). The default
+  observability surface is the GitHub UI + audit log.
+- `NFR-MAINT-001` ("Public Python functions SHALL have type hints; Pydantic
+  models"): applies to any future non-Copilot source code in this repo. Not
+  currently active because no Python source exists.
+- `NFR-GOV-005` ("≥ 80 % coverage on changed files"): applies once code is
+  present. While the repo is Markdown + Bicep + YAML, coverage gating is
+  enforced by Markdown lint, Bicep validate, and golden-task replay instead
+  (per [TEST.md](TEST.md)).
 
 ### 5.1 Security (NFR-SEC-*)
 
@@ -341,6 +422,13 @@ journey
 > The matrix maps every FR/NFR to the sprint(s) and user-story IDs that deliver
 > it, plus the eval/runbook artefact that verifies it. Update this table when
 > a sprint changes scope.
+>
+> **Verification-path note (per ADR-0002, v1.3.0)**: paths shown as
+> `evals/tasks/uc*.yaml` are the original (pre-pivot) path convention. The
+> canonical path under the GitHub Copilot coding agent runtime is
+> `agents/<name>/golden-tasks.md#<fixture-anchor>`. Both forms are accepted in
+> PRs; the per-sprint deliverables will normalise to the new convention as
+> they are written.
 
 ### 7.1 Functional Requirements
 
@@ -464,9 +552,20 @@ implementation MUST reference the requirement IDs it advances:
 5. **Pull requests** — The PR template `.github/PULL_REQUEST_TEMPLATE.md`
    REQUIRES a `Requirements implemented` section listing FR/NFR IDs.
    This is enforced per [NFR-GOV-006](#56-governance--compliance-nfr-gov-).
-6. **Tests & evals** — Test files and eval task YAMLs SHALL include a
-   `requirement` key (or docstring tag) referencing the requirement ID(s)
-   they verify.
+6. **Tests & evals** — Test files and eval task YAMLs / Markdown fixtures
+   SHALL include a `requirement` key (or docstring tag) referencing the
+   requirement ID(s) they verify. For golden-task fixtures under
+   `agents/<name>/golden-tasks.md` or `evals/<name>/*.md`, the required form
+   is a Markdown front-matter key:
+
+   ```markdown
+   ---
+   requirement: FR-UC1-005
+   # or for multiple:
+   # requirement: [FR-UC3-005, FR-UC3-006]
+   ---
+   ```
+
    Example test docstring: `"""Verifies FR-UC1-005 deterministic Bicep generation."""`.
 7. **Code comments** — Where business logic implements a specific requirement,
    a comment of the form `# implements: FR-UC3-009` SHOULD appear at the

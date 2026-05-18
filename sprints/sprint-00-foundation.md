@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1.0 |
+| **Version** | 1.2.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (initial release; 1.1.0 narrowed scope to GitHub Copilot coding-agent setup per SPRINT_PLAN §9 Q1) |
+| **Previous Version** | 1.0.0 (initial release); 1.1.0 narrowed scope to GitHub Copilot coding-agent setup per SPRINT_PLAN §9 Q1; 1.2.0 adds a runtime-amendment overlay aligning Sprint 0 with [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — the Python skeleton (`pyproject.toml`, `agents/__init__.py`, `tools/__init__.py`, `api/__init__.py`, `tests/__init__.py`, `evals/__init__.py`) and Python lint/format/test hooks (`ruff`, `black`, `pytest`, `pre-commit`) are **not delivered** in this sprint. They are replaced by Markdown lint + link check + golden-task fixture scaffolding. User-story IDs `S0-1..S0-4` are preserved; their acceptance criteria are reinterpreted in §3.1 below. |
 
 > **Window**: 2026-05-18 → 2026-05-22 (1 week bootstrap)
 > **Theme**: Bootstrap the repository and the **GitHub Copilot coding-agent**
@@ -62,6 +62,36 @@ By the end of the sprint:
 ---
 
 ## 3. Scope
+
+### 3.1 Runtime Amendment (per ADR-0002)
+
+The runtime is the **GitHub Copilot coding agent**
+([ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md)). The
+in-scope list below is reinterpreted accordingly:
+
+- **Python project skeleton, `pyproject.toml`, `ruff`, `black`, `pytest`,
+  `pre-commit`** → **dropped from Sprint 0**. There is no Python source code
+  in this repo. The repo is Markdown + YAML + Bicep (UC1 outputs).
+- **`.github/workflows/ci.yml` runs lint/test** → **runs `markdownlint-cli2`,
+  `markdown-link-check`, and `actionlint`**. Bicep validation is added only
+  when an `infra/` folder is created (no earlier than Sprint 2).
+- **`AGENTS.md`, `CODEOWNERS`, issue templates** → unchanged, still in scope.
+- **`.github/copilot/mcp.json`** → added to the deliverables list as part of
+  the Copilot coding-agent configuration.
+- **ADRs `0002-defer-hosting-subscription`, `0003-bicep-as-iac`,
+  `0004-oidc-federation`, `0005-cosmos-nosql-for-traces`** → reinterpreted:
+  `0002` is **superseded** by the new [ADR-0002 Runtime is GitHub Copilot
+  coding agent](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md);
+  `0003` (Bicep) is retained but scoped to UC1 *output* templates;
+  `0004` (OIDC) is retained but scoped to UC1's `iac-validate` and customer
+  what-if; `0005` (Cosmos for traces) is **superseded** by ADR-0002 (no
+  Cosmos at the platform layer).
+
+All user-story IDs (`S0-1`..`S0-4`) below remain stable. Acceptance criteria
+are reinterpreted in line with the amendment above (e.g., "`pytest`,
+`ruff check`, `black --check` all pass" in `S0-1` becomes "`markdownlint-cli2`
+and `markdown-link-check` pass"; "`mypy --strict` and Pydantic enforcement in
+CI" in `NFR-MAINT-001` is vacuously satisfied while no Python exists).
 
 ### In Scope
 - Python project: `pyproject.toml` (Python 3.11+), `ruff`, `black`, `pytest`, `pre-commit`.

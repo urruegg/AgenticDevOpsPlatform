@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.1.0 |
+| **Version** | 2.0.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.0.0 (introduced WorkIQ in S3); 1.1.0 re-scoped to Excel + Policy + PR (WorkIQ moved to S2) |
+| **Previous Version** | 1.0.0 (introduced WorkIQ in S3); 1.1.0 re-scoped to Excel + Policy + PR (WorkIQ moved to S2 — Python `tools/excel_to_spec.py`, `tools/ado_branch.py`, `tools/ado_commit.py`, `tools/ado_pr_open.py`, `agents/auth/obo.py`, `pytest` evals); 2.0.0 reframes the sprint around the **GitHub Copilot coding agent runtime** per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md) — Excel ingestion is performed by WorkIQ MCP (no Python tool); ADO branch/commit/PR is performed via Azure DevOps MCP and the agent's draft-PR workflow; the OBO flow is implemented by the underlying MCP server, not by Python code. §3.1 lists per-story reinterpretation; user-story IDs `S3-1..S3-6` are preserved. |
 
 > **Window**: 2026-06-22 → 2026-07-03 (2 weeks)
 > **Theme**: Close out **UC1** — extend WorkIQ MCP (introduced in [Sprint 2](./sprint-02-uc1-spec-parser-happy-path.md))
@@ -59,7 +59,24 @@ agent's Entra Agent ID **acting on behalf of the SA** (OBO).
 
 ## 3. Scope
 
-### In Scope
+### 3.1 Runtime Amendment (per ADR-0002)
+
+Reinterpretation of in-scope items:
+
+| Original (1.1.0) | Sprint 3 v2.0.0 equivalent |
+|------------------|---------------------------|
+| `tools/excel_to_spec.py` (Python `.xlsx` mapper) | WorkIQ MCP returns the spec already mapped to JSON. If the spec source is `.xlsx`, mapping is the WorkIQ MCP server's responsibility, not the agent's. The agent validates the JSON it receives. |
+| `tools/ado_branch.py`, `tools/ado_commit.py`, `tools/ado_pr_open.py` | Azure DevOps MCP server (`mcp_azure_devops`) tools. Side-effect ceiling `write`; the *open PR* path stays `write` (no extra gate). The *trigger pipeline* path is `deploy` and requires `approved-to-apply`. |
+| `.azuredevops/pull_request_template.md` (PR body template) | `.azuredevops/pull_request_template.md` Markdown asset committed to the customer's ADO Repo by the agent as part of the UC1 output. |
+| `agents/auth/obo.py` (Python OBO helper) | OBO is performed by the WorkIQ MCP server and/or the ADO MCP server when the human triggers the agent; no Python code in this repo. |
+| `infra/policy/landing-zone-baseline.bicep` | Retained — lives as a UC1 *output* Bicep module under `infra/landing-zone/policy/`. |
+| `evals/tasks/uc1/*.yaml` (6+ tasks) | `agents/spec-parser/golden-tasks.md` expanded to 6+ fixtures. |
+| `docs/runbooks/uc1-build-subscription.md` | Retained — still Markdown; lives in the same location. |
+| ADR `0007-obo-vs-service-identity.md` | Retained — still valuable as a record of when to use OBO vs service identity in MCP calls. |
+
+User-story IDs `S3-1..S3-6` preserved.
+
+### In Scope (original v1.1.0 text retained for traceability)
 - WorkIQ MCP **Excel** ingestion: deterministic `.xlsx` → spec JSON mapper.
 - ADO MCP **write** path: create branch, commit files, open PR.
 - PR template auto-populated with validation report + agent trace link.
