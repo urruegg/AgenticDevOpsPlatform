@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 2.0.1 |
+| **Version** | 2.1.0 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 2.0.0 (reversed Python/Foundry runtime per ADR-0002); 2.0.1 PATCH — replace `:` with `—` in §3 Use-Case Delivery timeline section headings so the Mermaid timeline parser stops crashing with "Cannot read properties of undefined (reading 'events')" on GitHub. No semantic change. |
+| **Previous Version** | 2.0.0 (reversed Python/Foundry runtime per ADR-0002); 2.0.1 PATCH — fixed Mermaid timeline section-heading parser crash; 2.1.0 MINOR — encode sprint **status** (🟢 finished / 🟡 in progress / 🔴 open) as colours in the §3 Gantt and add a colour legend. Status as of 2026-05-18: S0/S1/S2 finished, S5 in progress (MVP shipped per AGENTS.md 1.3.0; nightly scheduler, tracked-subscription registry, runbook, WorkIQ MCP deferred), S3/S4/S6 open. Critical-path information is unchanged and remains in §4 prose. |
 
 > **Purpose**: Sequencing proposal for the seven sprints that take the Agentic
 > DevOps Platform from an empty repo to a pilot-ready solution covering all
@@ -81,20 +81,28 @@ The plan follows four principles:
 
 ## 3. Timeline
 
+> **Colour legend** (status as of the document **Date** above; critical-path
+> information is captured separately in [§4](#4-dependency-graph)):
+>
+> - 🟢 **Finished** — sprint exit criteria met; tracked artefacts merged.
+> - 🟡 **In progress** — sprint started; some scope shipped, deferrals remain.
+> - 🔴 **Open** — not started.
+
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'doneTaskBkgColor':'#22c55e','doneTaskBorderColor':'#15803d','activeTaskBkgColor':'#eab308','activeTaskBorderColor':'#a16207','critBkgColor':'#ef4444','critBorderColor':'#b91c1c'}}}%%
 gantt
-    title Agentic DevOps Platform — Sprint Plan
+    title Agentic DevOps Platform — Sprint Plan (colour = status)
     dateFormat YYYY-MM-DD
     axisFormat %b %d
     section Phase 1 — Prototype
-    Sprint 0 — Foundation           :s0, 2026-05-18, 5d
-    Sprint 1 — Copilot Agent MVP    :s1, after s0, 12d
-    Sprint 2 — UC1 happy path       :crit, s2, after s1, 12d
-    Sprint 3 — UC1 end-to-end       :crit, s3, after s2, 12d
+    Sprint 0 — Foundation           :done,   s0, 2026-05-18, 5d
+    Sprint 1 — Copilot Agent MVP    :done,   s1, after s0, 12d
+    Sprint 2 — UC1 happy path       :done,   s2, after s1, 12d
+    Sprint 3 — UC1 end-to-end       :crit,   s3, after s2, 12d
     section Phase 2 — Pilot
-    Sprint 4 — UC3 PR Review        :crit, s4, after s3, 12d
-    Sprint 5 — UC2 Drift Analyzer   :crit, s5, after s4, 12d
-    Sprint 6 — Productionize & Pilot:s6, after s5, 12d
+    Sprint 4 — UC3 PR Review        :crit,   s4, after s3, 12d
+    Sprint 5 — UC2 Drift Analyzer   :active, s5, after s4, 12d
+    Sprint 6 — Productionize & Pilot:crit,   s6, after s5, 12d
 ```
 
 ```mermaid
