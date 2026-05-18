@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/urruegg/AgenticDevOpsPlatform/tree/main/docs
+    about: Architecture, security, AI governance, ADRs, PRD, sprint plan.
+  - name: Sprint Plan
+    url: https://github.com/urruegg/AgenticDevOpsPlatform/blob/main/sprints/SPRINT_PLAN.md
+    about: Sprint sequencing and roadmap.

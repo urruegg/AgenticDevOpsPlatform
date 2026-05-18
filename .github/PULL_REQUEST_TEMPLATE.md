@@ -13,12 +13,12 @@
 > List every PRD requirement ID this PR advances. Use `partial:` if the
 > requirement is not fully verified by this PR.
 
-- FR-…: <one-line description>
-- NFR-…: <one-line description>
+- `FR-...`: `<one-line description>`
+- `NFR-...`: `<one-line description>`
 
 ## Sprint Context
 
-- Sprint: `S<N>` — [link](../sprints/sprint-NN-name.md)
+- Sprint: `S<N>` — [sprint file](../sprints/sprint-NN-name.md)
 - User stories: `S<N>-<n>`, …
 
 ## Validation Evidence
