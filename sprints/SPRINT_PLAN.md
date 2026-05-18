@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Version** | 2.0.0 |
+| **Version** | 2.0.1 |
 | **Date** | 2026-05-18 |
 | **Author** | Urs Rüegg |
 | **Status** | Draft |
-| **Previous Version** | 1.2.0 (additive only; 2.0.0 reverses Python/Foundry runtime assumption per [ADR-0002](../docs/adr/0002-runtime-is-github-copilot-coding-agent.md), supersedes §9 Q3 model-provider abstraction, retires platform-runtime Azure infrastructure from S0–S6 scope) |
+| **Previous Version** | 2.0.0 (reversed Python/Foundry runtime per ADR-0002); 2.0.1 PATCH — replace `:` with `—` in §3 Use-Case Delivery timeline section headings so the Mermaid timeline parser stops crashing with "Cannot read properties of undefined (reading 'events')" on GitHub. No semantic change. |
 
 > **Purpose**: Sequencing proposal for the seven sprints that take the Agentic
 > DevOps Platform from an empty repo to a pilot-ready solution covering all
@@ -100,15 +100,15 @@ gantt
 ```mermaid
 timeline
     title Use-Case Delivery
-    section Sprint 0–1 : Platform foundation
+    section Sprint 0–1 — Platform foundation
         GitHub Copilot Agent setup, MCP allow-list, tool-contract policy : No Azure platform infra (ADR-0002); golden-task smoke run
-    section Sprint 2–3 : UC1 — Subscription Build
+    section Sprint 2–3 — UC1 Subscription Build
         Spec Parser & Deployment Agent : WorkIQ MCP from day one (Q2), Bicep generation, staging deploy via ADO MCP, validation, PR open in ADO
-    section Sprint 4 : UC3 — PR Review
+    section Sprint 4 — UC3 PR Review
         PR Review Agent : Trigger via ADO Service Hook → GH issue → Copilot agent → ADO PR comment; configurable trigger filter (Q5)
-    section Sprint 5 : UC2 — Drift Detection
+    section Sprint 5 — UC2 Drift Detection
         Drift Analyzer Agent : Nightly schedule workflow opens issue, agent scans read-only via Azure MCP, reports to ADO Wiki, routes remediation to UC1
-    section Sprint 6 : Productionize & Pilot
+    section Sprint 6 — Productionize & Pilot
         Agent registry & MCP allow-list review : Golden-task baselines, trigger filters, runbooks, pilot demo against PRD use cases (Q4)
 ```
 
